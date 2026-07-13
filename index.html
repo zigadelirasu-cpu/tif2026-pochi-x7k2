@@ -60,6 +60,11 @@ h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
 .bdg{font-size:9px;font-weight:800;color:#fff;border-radius:7px;padding:0 4px;line-height:13px}
 .bka{background:var(--c-ka)}.bshi{background:var(--c-shi)}
 .crown{font-size:9px}
+.more{font-size:8px;font-weight:800;color:#fff;background:#8aa5b8;border-radius:6px;padding:0 4px;line-height:12px;margin-left:auto;flex:none}
+.item.flash{animation:flashy .8s ease-out 3}
+@keyframes flashy{0%{box-shadow:0 0 0 3px #ff9500,0 0 14px #ff9500}100%{box-shadow:0 0 0 2px rgba(255,149,0,0)}}
+.lrow{cursor:pointer}
+.dayc{font-size:9px;font-weight:800;border-radius:5px;padding:1px 5px;color:#fff;white-space:nowrap;flex:none}
 .warn{color:#e02020;font-weight:900;font-size:10px}
 .hline{position:absolute;left:0;right:0;height:1px;background:rgba(30,80,120,.12);pointer-events:none}
 .hline.hh{background:rgba(30,80,120,.28)}
@@ -90,7 +95,7 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
 <body>
 <header>
  <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 専用 v2</small></h1>
- <div id="tips">タップでその枠だけチェック（なし→◎→○→△。他の枠とは連動しません）。「誰の」チェックかは上で切替。<button onclick="this.parentNode.style.display='none'">OK</button></div>
+ <div id="tips">タップでその枠だけチェック（なし→◎→○→△）。<b>長押し</b>で同じコの他の出演枠一覧→タップで移動。<button onclick="this.parentNode.style.display='none'">OK</button></div>
  <div class="rowflex">
   <div class="tabs">
    <button class="tab d0" data-day="0">7/31 金</button>
@@ -136,6 +141,10 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
    <button class="btn danger" id="btnReset">エクセル時点のチェックに戻す</button>
   </div>
  </div>
+</div></div>
+<div class="ovl" id="detOvl"><div class="panel">
+ <div class="panel-h">🎤 <span id="detTitle"></span><button class="x" data-close="detOvl">閉じる</button></div>
+ <div class="panel-b" id="detBody"></div>
 </div></div>
 <div id="toast"></div>
 
@@ -194,6 +203,62 @@ let zIdx = 1;
 function hm(min){ return Math.floor(min/60) + ":" + ("0"+min%60).slice(-2); }
 function mk(d, i){ return marks[d+":"+i] || ["",""]; }
 
+// ===== 同グループの他出演枠 =====
+const ROSTER_KEYS = Object.keys(DATA.roster);
+function slotGroups(sl){
+  if (DATA.roster[sl[3]]) return [sl[3]];
+  const out = [];
+  for (const g of ROSTER_KEYS){ if (sl[3].includes(g) || (sl[5]||"").includes(g)) out.push(g); }
+  return out;
+}
+const APPEAR = {};
+DATA.days.forEach((slots,d)=>slots.forEach((sl,i)=>{
+  slotGroups(sl).forEach(g=>{ (APPEAR[g] = APPEAR[g] || []).push({d,i}); });
+}));
+function relatedOf(d, i){
+  const seen = new Map();
+  slotGroups(DATA.days[d][i]).forEach(g=>(APPEAR[g]||[]).forEach(x=>seen.set(x.d+":"+x.i, x)));
+  seen.delete(d+":"+i);
+  return [...seen.values()].sort((a,b)=>a.d-b.d || DATA.days[a.d][a.i][1]-DATA.days[b.d][b.i][1] || DATA.days[a.d][a.i][0]-DATA.days[b.d][b.i][0]);
+}
+const DAYTAB = ["#c9a227","#0e7ac4","#de4830"];
+function openDetail(d, i){
+  const sl = DATA.days[d][i];
+  const rel = relatedOf(d, i);
+  const gs = slotGroups(sl);
+  document.getElementById("detTitle").textContent = (gs.length ? gs.join("・") : sl[3]) + " の出演枠";
+  const body = document.getElementById("detBody");
+  body.innerHTML = "";
+  const all = [{d, i, self:true}, ...rel.map(x=>({...x, self:false}))]
+    .sort((a,b)=>a.d-b.d || DATA.days[a.d][a.i][1]-DATA.days[b.d][b.i][1]);
+  all.forEach(x=>{
+    const s2 = DATA.days[x.d][x.i];
+    const m = mk(x.d, x.i);
+    const r = el("div","lrow","");
+    r.innerHTML = `<span class="dayc" style="background:${DAYTAB[x.d]}">${DAYLABEL[x.d]}</span>`+
+     `<span class="t">${hm(s2[1])}-${hm(s2[2])}</span>`+
+     `<span class="chip" style="background:${STCOLOR[s2[0]]}">${STSHORT[s2[0]]}</span>`+
+     `<span class="n">${esc(s2[3])}${x.self?'<small>← いま見ている枠</small>':(s2[5]?`<small>${esc(s2[5])}</small>`:"")}</span>`+
+     `${m[0]?`<span class="bdg bka">${P0[0]}${m[0]}</span>`:""}${m[1]?`<span class="bdg bshi">${P1[0]}${m[1]}</span>`:""}`;
+    r.addEventListener("click", ()=>{ hide("detOvl"); jumpTo(x.d, x.i); });
+    body.appendChild(r);
+  });
+  show("detOvl");
+}
+function jumpTo(d, i){
+  if (selOnly){ selOnly = false; togglePill(document.getElementById("fAll")); }
+  if (day !== d){
+    day = d;
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on", +x.dataset.day === d));
+  }
+  build();
+  const sl = DATA.days[d][i];
+  scroller.scrollTop = Math.max((sl[1]-START)*mh() - 90, 0);
+  scroller.scrollLeft = Math.max(42 + sl[0]*(ZOOM[zIdx][1]+4) - 50, 0);
+  const elx = grid.querySelector(`.item[data-idx="${i}"]`);
+  if (elx){ elx.classList.add("flash"); setTimeout(()=>elx.classList.remove("flash"), 2600); }
+}
+
 // ===== grid =====
 const grid = document.getElementById("grid");
 const scroller = document.getElementById("scroller");
@@ -250,12 +315,26 @@ function itemEl(sl, idx, confs){
   const q = query.trim();
   if (q && !(name.includes(q) || (bk||"").includes(q))) d.classList.add("dim");
   if (selOnly && !m[0] && !m[1]) d.style.display = "none";
+  d.dataset.idx = idx;
+  const relN = relatedOf(day, idx).length;
   d.innerHTML =
-   `<div class="tm">${confs.has(idx)?'<span class="warn">⚠</span>':''}${hm(s)}-${hm(e)}${prem?'<span class="crown">👑</span>':''}</div>`+
+   `<div class="tm">${confs.has(idx)?'<span class="warn">⚠</span>':''}${hm(s)}-${hm(e)}${prem?'<span class="crown">👑</span>':''}${relN?`<span class="more">他${relN}</span>`:""}</div>`+
    `<div class="nm">${esc(name)}</div>`+
    `<div class="badges">${m[0]?`<span class="bdg bka">${P0[0]}${m[0]}</span>`:""}${m[1]?`<span class="bdg bshi">${P1[0]}${m[1]}</span>`:""}</div>`;
   if (bk) d.title = bk;
+  let lpTimer = null, lpFired = false;
+  const lpStart = ()=>{ lpFired = false; clearTimeout(lpTimer); lpTimer = setTimeout(()=>{ lpFired = true; openDetail(day, idx); }, 450); };
+  const lpCancel = ()=>clearTimeout(lpTimer);
+  d.addEventListener("touchstart", lpStart, {passive:true});
+  d.addEventListener("touchmove", lpCancel, {passive:true});
+  d.addEventListener("touchend", lpCancel);
+  d.addEventListener("mousedown", lpStart);
+  d.addEventListener("mousemove", lpCancel);
+  d.addEventListener("mouseup", lpCancel);
+  d.addEventListener("mouseleave", lpCancel);
+  d.addEventListener("contextmenu", e=>{ e.preventDefault(); lpCancel(); if(!lpFired) openDetail(day, idx); });
   d.addEventListener("click", ()=>{
+    if (lpFired){ lpFired = false; return; }
     const id = day+":"+idx;
     const cur = mk(day, idx).slice();
     cur[actP] = CYCLE[(rank(cur[actP])+1) % 4];
@@ -316,6 +395,7 @@ function openList(){
      `<span class="chip" style="background:${STCOLOR[st]}">${STSHORT[st]}</span>`+
      `<span class="n">${esc(name)}${bk?`<small>${esc(bk)}</small>`:""}</span>`+
      `${x.m[0]?`<span class="bdg bka">${P0[0]}${x.m[0]}</span>`:""}${x.m[1]?`<span class="bdg bshi">${P1[0]}${x.m[1]}</span>`:""}`;
+    r.addEventListener("click", ()=>{ hide("listOvl"); openDetail(day, x.i); });
     body.appendChild(r);
   });
   show("listOvl");
