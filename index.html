@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.25">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0e7ac4">
 <title>TIF2026 ぽちぽちタイムテーブル（かずぽよ＆しゃ専用）</title>
 <style>
@@ -10,9 +10,11 @@
  --c-ka:#ff4f9e;--c-shi:#00a6c8;
  --tint-ka:#fff3a0;--tint-shi:#c9f2b0;}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;height:100%}
-body{font-family:"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;
- background:var(--hdr);color:#fff;display:flex;flex-direction:column;overflow:hidden}
+html{height:100%;overscroll-behavior:none}
+body{margin:0;padding:0;position:fixed;inset:0;width:100%;height:100%;height:100dvh;
+ font-family:"Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif;
+ background:var(--hdr);color:#fff;display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
+button,input{touch-action:manipulation}
 header{padding:6px 10px 4px;flex:none}
 h1{font-size:15px;margin:0 0 6px;font-weight:800;letter-spacing:.02em}
 h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
@@ -28,13 +30,14 @@ h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
 .pill button.on.pka{color:var(--c-ka)}.pill button.on.pshi{color:var(--c-shi)}
 .btn{border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.25);color:#fff}
 .btn:active{transform:scale(.96)}
-#search{border:none;border-radius:8px;padding:7px 10px;font-size:12px;width:130px;outline:none}
+#search{border:none;border-radius:8px;padding:7px 10px;font-size:16px;width:130px;outline:none}
 #stats{font-size:11px;opacity:.92;line-height:1.4}
 #stats b{font-size:12px}
 #tips{background:#fff8;color:#06344f;border-radius:8px;padding:5px 9px;font-size:11px;margin-bottom:6px;display:flex;gap:8px;align-items:center}
 #tips button{margin-left:auto;border:none;background:#06344f22;border-radius:6px;font-size:11px;padding:2px 8px;cursor:pointer}
-#scroller{flex:1;overflow:auto;background:#eaf4fb;border-radius:12px 12px 0 0;-webkit-overflow-scrolling:touch}
-#grid{display:grid;position:relative}
+#scroller{flex:1;overflow:auto;background:#eaf4fb;border-radius:12px 12px 0 0;
+ overscroll-behavior:none;touch-action:pan-x pan-y}
+#grid{display:grid;position:relative;width:max-content}
 .corner{position:sticky;top:0;left:0;z-index:40;background:#eaf4fb}
 .sthead{position:sticky;top:0;z-index:30;padding:6px 4px;text-align:center;font-weight:800;font-size:12px;color:#fff;
  border-radius:0 0 10px 10px;margin:0 2px;text-shadow:0 1px 2px rgba(0,0,0,.25);line-height:1.25}
@@ -43,7 +46,7 @@ h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
 .axis .hlabel{position:absolute;right:4px;font-size:10px;font-weight:700;color:#3a6b8a;transform:translateY(-50%)}
 .colbody{position:relative;margin:0 2px;border-radius:6px}
 .item{position:absolute;left:2px;right:2px;border-radius:6px;background:#fff;color:#123;cursor:pointer;overflow:hidden;
- border-left:4px solid #999;box-shadow:0 1px 2px rgba(0,0,0,.12);padding:1px 3px 1px 4px;user-select:none;-webkit-user-select:none}
+ border-left:4px solid #999;box-shadow:0 1px 2px rgba(0,0,0,.12);padding:1px 3px 1px 4px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .item .tm{font-size:9px;font-weight:700;color:#356;line-height:1.1;display:flex;gap:3px;align-items:center}
 .item .nm{font-size:11px;font-weight:700;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .item.sp{background:#fde9f0}
@@ -60,21 +63,21 @@ h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
 .warn{color:#e02020;font-weight:900;font-size:10px}
 .hline{position:absolute;left:0;right:0;height:1px;background:rgba(30,80,120,.12);pointer-events:none}
 .hline.hh{background:rgba(30,80,120,.28)}
-#nowline{position:absolute;left:0;right:0;height:2px;background:#ff2d2d;z-index:15;pointer-events:none;box-shadow:0 0 4px #ff2d2d}
+.nowline{position:absolute;left:0;right:0;height:2px;background:#ff2d2d;z-index:15;pointer-events:none;box-shadow:0 0 4px #ff2d2d}
 .ovl{position:fixed;inset:0;background:rgba(4,40,66,.55);z-index:100;display:none;align-items:flex-end;justify-content:center}
 .ovl.show{display:flex}
 .panel{background:#fff;color:#123;border-radius:16px 16px 0 0;width:min(640px,100%);max-height:82vh;display:flex;flex-direction:column}
 .panel-h{padding:10px 14px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5eef5}
 .panel-h .btn{background:#0e7ac4;color:#fff}
 .panel-h .x{margin-left:auto;background:#eee;color:#456;border-radius:8px;border:none;font-weight:800;padding:6px 10px;cursor:pointer}
-.panel-b{overflow:auto;padding:8px 12px 20px}
+.panel-b{overflow:auto;padding:8px 12px 20px;overscroll-behavior:contain}
 .lrow{display:flex;gap:7px;align-items:center;padding:6px 4px;border-bottom:1px dashed #dde8f0;font-size:12px}
 .lrow .t{font-weight:800;color:#356;white-space:nowrap;font-size:11px}
 .lrow .chip{font-size:9px;font-weight:800;color:#fff;border-radius:5px;padding:1px 5px;white-space:nowrap}
 .lrow .n{font-weight:700;flex:1;min-width:0}
 .lrow .n small{display:block;font-weight:600;color:#888;font-size:10px}
 .lrow.confr{background:#ffecec;border-radius:6px}
-textarea{width:100%;height:110px;font-size:11px;border:1px solid #cdd;border-radius:8px;padding:6px}
+textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-radius:8px;padding:6px}
 .share-sec{margin-bottom:14px}
 .share-sec h3{font-size:13px;margin:4px 0 6px}
 .share-sec .btn{background:#0e7ac4;color:#fff;margin-top:6px}
@@ -86,8 +89,8 @@ textarea{width:100%;height:110px;font-size:11px;border:1px solid #cdd;border-rad
 </head>
 <body>
 <header>
- <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 専用</small></h1>
- <div id="tips">タップでチェック（なし→◎→○→△）。上のボタンで「誰の」チェックか切替。データはこの端末に自動保存。<button onclick="this.parentNode.style.display='none'">OK</button></div>
+ <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 専用 v2</small></h1>
+ <div id="tips">タップでその枠だけチェック（なし→◎→○→△。他の枠とは連動しません）。「誰の」チェックかは上で切替。<button onclick="this.parentNode.style.display='none'">OK</button></div>
  <div class="rowflex">
   <div class="tabs">
    <button class="tab d0" data-day="0">7/31 金</button>
@@ -138,56 +141,74 @@ textarea{width:100%;height:110px;font-size:11px;border:1px solid #cdd;border-rad
 
 <script>
 const DATA = {"persons":["かずぽよ","しゃ"],"stages":["UP-T HOT STAGE","HEAT GARAGE","SMILE GARDEN","DOLL FACTORY","SKY STAGE","TOROCCO PARK","浮島STAGE"],"days":[[[2,585,600,"TIF2026 グランドオープニング",1,""],[0,600,630,"OCHA NORMA",0,""],[1,600,630,"Tシャツ着用者限定ステージ PEAK SPOT DAY",1,"Toi Toi Toi / fav me / log you ※先行販売限定Tシャツ着用者限定"],[2,600,620,"佐々木彩夏（ももいろクローバーZ）",0,""],[3,600,620,"SEKAIE☆",0,""],[5,600,620,"Sepiacode",0,""],[6,600,615,"RiNCENT♯",0,""],[6,615,630,"いちごみるく色に染まりたい。",0,""],[3,620,640,"ROOKEY♡ROOKEYS",0,""],[5,620,640,"Sparkling Eyes",0,""],[2,625,645,"AsIs",0,""],[4,630,645,"MEGAFON",0,""],[6,630,645,"透色ドロップ",0,""],[0,640,670,"Juice=Juice",0,""],[3,640,660,"KAWAII LAB. SOUTH",0,""],[5,640,660,"Road to TIF 2026 屋外ステージブロック 3位",1,""],[1,645,670,"Pixel Ribbon",0,""],[2,645,665,"feelNEO",0,""],[4,645,660,"クマリデパート",0,""],[6,645,660,"Road to TIF 2026 屋外ステージブロック 4位",1,""],[4,660,675,"瞬きもせず",0,""],[2,665,685,"HIBANA",0,""],[3,665,685,"MAGICAL SPEC",0,""],[5,665,685,"FULIT BOX",0,""],[6,665,680,"W.ダブルヴィー",0,""],[1,670,695,"こみっきゅおん！",0,""],[4,675,690,"ドレスコード",0,""],[0,680,710,"NEO JAPONISM",0,""],[6,680,695,"最終未来少女",0,""],[3,685,705,"BNSI",0,""],[5,685,705,"STAiNY",0,""],[1,695,720,"TENRIN",0,""],[2,695,715,"MORE STAR",0,""],[4,695,710,"いぎなり東北産",0,""],[6,695,710,"Ma'Scar'Piece",0,""],[3,705,725,"NUANCE",0,""],[5,705,725,"UtaGe!",0,""],[4,710,725,"Jams Collection",0,""],[6,710,725,"Sepiacode",0,""],[2,715,735,"ワガママなラストノート",0,""],[0,720,750,"ドラマチックレコード",0,""],[4,725,740,"愛乙女★DOLL",0,""],[1,730,755,"KAWAII LAB. MATES",0,""],[3,730,750,"selfish",0,""],[5,730,750,"#よーよーよー",0,""],[2,735,755,"chuLa",0,""],[6,735,750,"himawari(船橋)",0,""],[4,740,755,"びっくえんじぇる",0,""],[3,750,770,"かすみ草とステラ",0,""],[5,750,770,"風男塾",0,""],[6,750,765,"Sparkling Eyes",0,""],[1,755,780,"君に、胸キュン。",0,""],[0,760,790,"iON!",0,""],[4,760,775,"いちごみるく色に染まりたい。",0,""],[6,765,780,"AsIs",0,""],[2,770,790,"灼熱！真夏のアイドルメドレー ～A-RIN BEYOND THE LIMIT～",1,"佐々木彩夏（ももいろクローバーZ）"],[3,770,790,"透色ドロップ",0,""],[5,770,790,"タイトル未定",0,""],[4,775,790,"Peel the Apple",0,""],[1,780,805,"点染テンセイ少女。",0,""],[6,780,795,"Pixel Ribbon",0,""],[4,790,805,"FES☆TIVE",0,""],[3,795,815,"クマリデパート",0,""],[5,795,815,"HzMe",0,""],[0,800,830,"CANDY TUNE",0,""],[2,800,820,"虹のコンキスタドール",0,""],[6,800,815,"瞬きもせず",0,""],[1,805,830,"THE ENCORE",0,""],[4,805,820,"夜光性アミューズ",0,""],[3,815,835,"フューチャーサイダー",0,""],[5,815,835,"キングサリ",0,""],[6,815,830,"ROOKEY♡ROOKEYS",0,""],[2,820,825,"くまま × 虹のコンキスタドール",1,"スペシャルコラボ くままちょこっと乱入コラボ♡"],[2,825,845,"くまま",0,""],[6,830,845,"MAGICAL SPEC",0,""],[3,835,855,"UtaGe!",0,""],[5,835,855,"PIGGS",0,""],[0,840,870,"Jams Collection",0,""],[1,840,865,"Sweet Alley",0,""],[2,845,865,"Toi Toi Toi",0,""],[6,845,860,"SEKAIE☆",0,""],[1,865,890,"SITUASION",0,""],[3,865,895,"超アイドルアワード2026ステージ",1,"真白美央(Pixel Ribbon) / 黒瀬美蘭(Re:♡) / 有村南海(LinQ) / 有栖なのは(アイドル革命) / 永松波留(ラフ×ラフ)"],[5,865,885,"のんふぃく！",0,""],[6,870,885,"FULIT BOX",0,""],[2,875,895,"にしたんクリニック タンバリンダンス選手権",1,"ドラマチックレコード / NANIMONO / log you"],[0,880,925,"KiiiKiii",0,"音楽番組『STAR』SPコラボ"],[4,880,895,"きゅるりんってしてみて",0,""],[5,885,905,"Merry BAD TUNE.",0,""],[6,885,900,"こみっきゅおん！",0,""],[1,890,915,"WHITE SCORPION",0,""],[2,895,915,"テンシンランマン",0,""],[4,895,910,"KAWAII LAB. SOUTH",0,""],[3,900,920,"HzMe",0,""],[6,900,915,"限りなく白く",0,""],[5,905,925,"Tohkei",0,""],[4,910,925,"シンデレラ宣言！",0,""],[1,915,940,"最終未来少女",0,""],[2,915,935,"可憐なアイボリー",0,""],[6,915,930,"hakanai",0,""],[3,920,940,"Mirror,Mirror",0,""],[4,925,940,"W.ダブルヴィー",0,""],[5,930,950,"MEGAFON",0,""],[0,935,965,"櫻井優衣",0,""],[3,940,960,"INUWASI",0,""],[6,940,955,"ファーストプレイリスト",0,""],[2,945,965,"SUPER☆GiRLS",0,""],[4,945,960,"なみだ色の消しごむ",0,""],[1,950,975,"Ringwanderung",0,""],[5,950,970,"Appare!",0,""],[6,955,970,"BNSI",0,""],[4,960,975,"RiNCENT♯",0,""],[2,965,985,"愛乙女★DOLL",0,""],[3,965,985,"Peel the Apple",0,""],[5,970,990,"高嶺のなでしこ",0,""],[6,970,985,"風男塾",0,""],[0,975,1005,"いぎなり東北産",0,""],[1,975,1000,"Merry BAD TUNE.",0,""],[4,975,990,"フューチャーサイダー",0,""],[2,985,1005,"HKT48 6期生・7期生 & NGT48 4期生・5期生 × TIF2026ステージ争奪イベント",1,""],[3,985,1005,"ドレスコード",0,""],[6,985,1000,"RAViDAVi",0,""],[4,990,1005,"虹のコンキスタドール",0,""],[5,990,995,"くまま × 高嶺のなでしこ",1,"スペシャルコラボ くままちょこっと乱入コラボ♡"],[1,1000,1025,"ラフ×ラフ",0,""],[5,1000,1020,"Devil ANTHEM.",0,""],[3,1005,1025,"log you",0,""],[4,1010,1025,"限りなく白く",0,""],[6,1010,1025,"びっくえんじぇる",0,""],[2,1015,1035,"かすみ草とステラ",0,""],[5,1020,1040,"Ma'Scar'Piece",0,""],[4,1025,1040,"MyDearDarlin'",0,""],[6,1025,1040,"NANIMONO",0,""],[3,1030,1050,"のんふぃく！",0,""],[1,1035,1060,"MORE STAR",0,""],[2,1035,1055,"myojou",0,""],[0,1040,1070,"PassCode(Band Set)",0,""],[4,1040,1055,"himawari(船橋)",0,""],[5,1040,1060,"FES☆TIVE",0,""],[6,1040,1055,"STAiNY",0,""],[3,1050,1070,"AVAM",0,""],[2,1055,1080,"IDOL SUMMER JAMBOREE DAY1",1,"ジエメイ / SITUASION / PIGGS"],[4,1055,1070,"NUANCE",0,""],[6,1055,1070,"なみだ色の消しごむ",0,""],[1,1060,1085,"LinQ",0,""],[3,1070,1090,"RAViDAVi",0,""],[6,1070,1085,"INUWASI",0,""],[4,1080,1095,"ファーストプレイリスト",0,""],[5,1080,1110,"DJ KOO × IDOL DO DANCE PARTY",1,"DJ KOO"],[1,1085,1110,"きゅるりんってしてみて",0,""],[0,1090,1120,"私立恵比寿中学",0,""],[2,1090,1110,"fav me",0,""],[4,1095,1110,"AOAO",0,""],[3,1100,1120,"夜光性アミューズ",0,""],[2,1110,1130,"#Mooove!",0,""],[4,1110,1125,"selfish",0,""],[3,1120,1140,"シンデレラ宣言！",0,""],[4,1125,1140,"Tohkei",0,""],[0,1130,1160,"CUTIE STREET",0,""],[2,1130,1150,"Appare!",0,""],[3,1140,1160,"MyDearDarlin'",0,""],[4,1145,1160,"TENRIN",0,""],[1,1155,1240,"メインステージ争奪LIVE 決勝戦",1,"テンシンランマン / HIBANA / myojou / ワガママなラストノート ※入場整理券(事前抽選)必要"],[2,1160,1180,"NANIMONO",0,""],[4,1160,1175,"NEO JAPONISM",0,""],[3,1165,1185,"タイトル未定",0,""],[0,1170,1200,"SWEET STEADY",0,""],[4,1175,1190,"AVAM",0,""],[2,1180,1205,"スペシャルコラボステージ INUWASI × Devil ANTHEM.",1,""],[3,1185,1205,"hakanai",0,""],[4,1195,1210,"Mirror,Mirror",0,""],[3,1205,1225,"キングサリ",0,""],[0,1210,1240,"超ときめき♡宣伝部",0,""],[2,1210,1240,"AKB48",0,""],[4,1210,1225,"WHITE SCORPION",0,""],[3,1225,1245,"ジエメイ",0,""],[4,1225,1240,"高嶺のなでしこ",0,""]],[[2,585,600,"ラジオ体操",1,""],[0,590,620,"UtaGe!",0,""],[1,600,630,"Tシャツ着用者限定ステージ HEROINES DAY",1,"TENRIN / MEGAFON / 夜光性アミューズ ※先行販売限定Tシャツ着用者限定"],[2,600,620,"KAWAII LAB. MATES",0,""],[3,600,620,"愛乙女★DOLL",0,""],[5,600,620,"可憐なアイボリー",0,""],[6,600,615,"さとりモンスター",0,""],[4,615,630,"ChumToto",0,""],[6,615,630,"君に、胸キュン。",0,""],[2,620,640,"ラナキュラ",0,""],[3,620,640,"シャニムニ＝パレード",0,"ONLY FIVEステージ"],[5,620,640,"すーぱーぷーばぁー!!",0,""],[0,630,660,"INUWASI",0,""],[4,630,645,"Pastel Closet",0,""],[6,630,645,"ラフ×ラフ",0,""],[2,640,660,"THE ORCHESTRA TOKYO",0,""],[3,640,660,"ラストシーン",0,""],[5,640,660,"アップアップガールズ（仮）",0,""],[1,645,670,"ロージークロニクル",0,""],[4,645,660,"Primulav",0,""],[6,645,660,"NEKIRU",0,""],[4,660,675,"Luce Twinkle Wink☆",0,""],[3,665,685,"W.ダブルヴィー",0,""],[5,665,685,"KAWAII LAB. SOUTH",0,""],[6,665,680,"さよならステイチューン",0,""],[0,670,700,"つばきファクトリー",0,""],[1,670,695,"AVAM",0,""],[2,670,690,"i-COL",0,""],[4,680,695,"木苺FRUCTOSE",0,""],[6,680,695,"THE ENCORE",0,""],[3,685,705,"RiNCENT♯",0,""],[5,685,705,"限りなく白く",0,""],[2,690,710,"アンスリューム",0,""],[1,695,720,"AdamLilith",0,""],[4,695,710,"LinQ",0,""],[6,695,710,"高嶺のなでしこ",0,""],[3,705,725,"Road to TIF 2026 屋内ステージブロック 2位",1,""],[5,705,725,"Road to TIF 2026 屋外ステージブロック 2位",1,""],[0,710,740,"Devil ANTHEM.",0,""],[2,710,730,"二丁目の魁カミングアウト",0,""],[4,710,725,"KLP48",0,""],[6,710,725,"愛乙女★DOLL",0,""],[4,725,740,"＠onefive",0,""],[1,730,755,"手羽先センセーション",0,""],[3,730,750,"WHITE SCORPION",0,""],[5,730,750,"びっくえんじぇる",0,""],[6,735,750,"ChumToto",0,""],[2,740,760,"Peel the Apple",0,""],[4,745,760,"アイテムはてるてるのみ",0,"ONLY FIVEステージ"],[0,750,780,"夜光性アミューズ",0,""],[3,750,770,"feelNEO",0,""],[5,750,770,"MAGICAL SPEC",0,""],[6,750,765,"Primulav",0,""],[1,755,780,"PIGGS",0,""],[4,760,775,"KAWAII LAB. MATES",0,""],[2,765,785,"ラフ×ラフ",0,""],[6,765,780,"可憐なアイボリー",0,""],[3,770,790,"Kolokol",0,""],[5,770,790,"メイビーME",0,""],[4,775,790,"すーぱーぷーばぁー!!",0,""],[1,780,805,"i-COL",0,""],[6,780,795,"AVAM",0,""],[2,785,805,"なみだ色の消しごむ",0,""],[0,790,805,"TIF2026×UNIDOLステージ",1,"高嶺のなでしこ"],[4,790,805,"NANIMONO",0,""],[5,795,815,"最終未来少女",0,""],[3,800,820,"カフェオーレ（乃木坂46 五百城茉央＆奥田いろは）",0,""],[6,800,815,"zanka",0,""],[1,805,830,"MyDearDarlin'",0,""],[0,815,845,"Appare!",0,""],[2,815,835,"ばってん少女隊",0,""],[5,815,835,"TENRIN",0,""],[6,815,830,"Axelight",0,""],[3,820,840,"Rain Tree",0,""],[6,830,845,"点染テンセイ少女。",0,""],[2,835,855,"きのホ。",0,""],[5,835,855,"ROOKEY♡ROOKEYS",0,""],[3,840,860,"iON!",0,""],[1,845,905,"TIF ASIA TOUR 2026 スペシャルライブステージ",1,"木苺FRUCTOSE / KLP48 / Jams Collection / CYNHN / NEKIRU / 虹のコンキスタドール / Peel the Apple / Primulav / Luce Twinkle Wink☆"],[6,845,860,"PIGGS",0,""],[0,855,885,"i☆Ris",0,""],[2,855,875,"fishbowl",0,""],[3,865,885,"himawari(船橋)",0,""],[4,865,880,"ラストシーン",0,""],[5,865,885,"フューチャーサイダー",0,""],[6,870,885,"ドラマチックレコード",0,""],[4,880,895,"Falench.",0,"ONLY FIVEステージ"],[2,885,905,"にしたんクリニック タンバリンダンス選手権",1,"タイトル未定 / Merry BAD TUNE. / ラフ×ラフ"],[3,885,905,"SITUASION",0,""],[5,885,905,"カラフルスクリーム",0,""],[6,885,900,"アップアップガールズ（仮）",0,""],[0,895,925,"iLiFE! × NEO JAPONISM",1,"スペシャルコラボ"],[4,895,910,"まねきケチャ",0,""],[6,900,915,"二丁目の魁カミングアウト",0,""],[2,905,920,"TIF de Debut 2026",0,""],[3,905,925,"zanka",0,""],[5,905,925,"fav me",0,""],[4,910,925,"さよならステイチューン",0,""],[1,915,940,"後藤真希",0,""],[6,915,930,"UtaGe!",0,""],[2,920,940,"ハルニシオン",0,""],[3,930,960,"ばってん少女隊",0,""],[4,930,945,"THE ENCORE",0,""],[5,930,950,"LinQ",0,""],[0,935,965,"HKT48",0,""],[6,935,950,"Pastel Closet",0,""],[1,940,965,"＠onefive",0,""],[2,940,960,"CiON",0,""],[4,945,960,"ジエメイ",0,""],[5,950,970,"NANIMONO",0,""],[6,950,965,"アップアップガールズ（2）",0,""],[3,960,980,"ナナコロビヤオキ",0,""],[4,960,975,"NEKIRU",0,""],[1,965,990,"CYNHN",0,""],[6,965,980,"木苺FRUCTOSE",0,""],[2,970,990,"CYBERJAPAN DANCERS",0,""],[5,970,990,"シンデレラ宣言！",0,""],[4,975,990,"Task have Fun",0,""],[3,980,1000,"KLP48",0,""],[6,980,995,"MEGAFON",0,""],[0,985,1015,"虹のコンキスタドール",0,""],[2,990,1015,"スペシャルコラボステージ Jams Collection × Rain Tree",1,""],[4,995,1010,"さとりモンスター",0,""],[5,995,1015,"AdamLilith",0,""],[1,1000,1025,"衛星とカラテア",0,""],[3,1005,1025,"Merry BAD TUNE.",0,""],[6,1005,1020,"Luce Twinkle Wink☆",0,""],[4,1010,1025,"きのホ。",0,""],[2,1015,1035,"Ringwanderung",0,""],[5,1015,1035,"RAViDAVi",0,""],[6,1020,1035,"FES☆TIVE",0,""],[0,1025,1055,"のんふぃく！",0,""],[1,1025,1050,"Palette Parade",0,""],[3,1025,1045,"THE ORCHESTRA TOKYO",0,""],[4,1025,1040,"Kolokol",0,""],[5,1035,1055,"NEO JAPONISM",0,""],[6,1035,1050,"feelNEO",0,""],[4,1040,1055,"INUWASI",0,""],[2,1045,1065,"タイトル未定",0,""],[3,1045,1065,"buGG",0,"ONLY FIVEステージ"],[1,1050,1075,"ジエメイ",0,""],[6,1050,1065,"Appare!",0,""],[5,1060,1080,"クマリデパート",0,""],[0,1065,1095,"SKE48",0,""],[4,1065,1080,"わーすた",0,""],[6,1065,1080,"CYBERJAPAN DANCERS",0,""],[3,1070,1090,"Ill",0,""],[2,1075,1095,"高嶺のなでしこ",0,""],[4,1080,1095,"君に、胸キュン。",0,""],[5,1080,1100,"アンスリューム",0,""],[1,1090,1115,"AsIs",0,""],[3,1090,1110,"Axelight",0,""],[2,1095,1115,"諸橋沙夏（＝LOVE）",0,""],[4,1095,1110,"カラフルスクリーム",0,""],[5,1100,1120,"iON!",0,""],[0,1105,1135,"僕が見たかった青空",0,""],[3,1110,1130,"Tohkei",0,""],[4,1110,1125,"メイビーME",0,""],[1,1115,1140,"Mirror,Mirror",0,""],[4,1130,1145,"Merry BAD TUNE.",0,""],[2,1135,1170,"IDOL SUMMER JAMBOREE ACOUSTIC",1,"西原悠桜(可憐なアイボリー) / 高橋あきほ(Kolokol) / 愛佳(CiON) / 黎鮫ワナ(ジエメイ) / 広瀬みのり(CYNHN) / 冨樫優花(タイトル未定) / 滝沢ひなの(NEO JAPONISM) / 柳美舞(ばってん少女隊) / きらら(feelNEO) / 佐藤倫子(Ringwanderung)"],[3,1135,1155,"アップアップガールズ（2）",0,""],[1,1140,1165,"MEGAFON",0,""],[0,1145,1175,"≒JOY",0,""],[4,1145,1160,"Devil ANTHEM.",0,""],[3,1155,1175,"ネコプラpixx.",0,"ONLY FIVEステージ"],[4,1160,1175,"点染テンセイ少女。",0,""],[1,1175,1200,"Onephony",0,""],[3,1175,1195,"こみっきゅおん！",0,""],[4,1175,1190,"Ill",0,""],[2,1180,1200,"Task have Fun",0,""],[0,1185,1215,"≠ME",0,""],[4,1195,1210,"SITUASION",0,""],[1,1200,1225,"FES☆TIVE",0,""],[2,1200,1220,"わーすた",0,""],[3,1200,1220,"Jams Collection",0,""],[4,1210,1225,"Ringwanderung",0,""],[2,1220,1240,"iLiFE!",0,""],[3,1220,1240,"まねきケチャ",0,""],[0,1225,1255,"＝LOVE",0,""],[1,1225,1250,"fav me",0,""],[4,1225,1240,"衛星とカラテア",0,""],[3,1240,1260,"ドラマチックレコード",0,""]],[[0,585,615,"高嶺のなでしこ",0,""],[2,585,600,"ラジオ体操",1,""],[1,600,630,"Tシャツ着用者限定ステージ ディアステージ DAY",1,"きゅるりんってしてみて / CYNHN / 虹のコンキスタドール ※先行販売限定Tシャツ着用者限定"],[2,600,620,"log you",0,""],[3,600,620,"ラフ×ラフ",0,""],[5,600,620,"すてねこキャッツ",0,""],[6,600,615,"パラディーク",0,""],[4,615,630,"のんふぃく！",0,""],[6,615,630,"アルテミスの翼",0,""],[0,620,650,"NGT48",0,""],[2,620,640,"My_Stage",0,""],[3,620,640,"すべての瞬間は君だった。",0,""],[5,620,640,"ラナキュラ",0,""],[4,630,645,"テンシンランマン",0,""],[6,630,645,"YOLOZ",0,""],[2,640,660,"hakanai",0,""],[3,640,660,"コングラッチェ！",0,""],[5,640,660,"透色ドロップ",0,""],[1,645,670,"ドレスコード",0,""],[4,645,660,"アップアップガールズ（2）",0,""],[6,645,660,"Devil ANTHEM.",0,""],[0,660,690,"柏木由紀",0,""],[4,660,675,"ワガママなラストノート",0,""],[3,665,685,"#Mooove!",0,""],[5,665,685,"PRSMIN",0,""],[6,665,680,"ルージュブック",0,""],[1,670,695,"カラフルスクリーム",0,""],[2,670,690,"Sweet Alley",0,""],[4,680,695,"myojou",0,""],[6,680,695,"α+",0,""],[3,685,705,"Gran☆Ciel",0,""],[5,685,705,"GILTY x GILTY",0,""],[2,690,710,"FULIT BOX",0,""],[0,695,725,"NMB48",0,""],[1,695,720,"アンスリューム",0,""],[4,695,710,"CiON",0,""],[6,695,710,"アイドルカレッジ",0,""],[3,705,725,"STAiNY",0,""],[5,705,725,"KiSS KiSS",0,""],[2,710,735,"スペシャルコラボステージ Appare! × わーすた",1,""],[4,710,725,"HIBANA",0,""],[6,710,725,"#よーよーよー",0,""],[4,725,740,"キングサリ",0,""],[1,730,745,"Road to TIF 2026 屋内ステージブロック 1位",1,""],[3,730,750,"Quubi",0,""],[5,730,750,"ナナコロビヤオキ",0,""],[6,730,745,"AOAO",0,""],[0,735,765,"Merry BAD TUNE.",0,""],[1,745,770,"なみだ色の消しごむ",0,""],[2,745,765,"RE-GE",0,""],[6,745,760,"Palette Parade",0,""],[3,750,770,"Toi Toi Toi",0,""],[4,750,765,"SUPER☆GiRLS",0,""],[5,750,770,"ポンコツコンポ",0,""],[6,760,775,"NEO JAPONISM",0,""],[2,765,785,"Onephony",0,""],[4,765,780,"Road to TIF 2026 屋外ステージブロック 1位",1,""],[0,770,790,"メインステージ争奪LIVE WINNERステージ",1,"Day1決勝戦の勝者"],[1,770,795,"Task have Fun",0,""],[3,770,790,"PRSMIN",0,""],[5,770,795,"ラフ×ラフ presents アイドル天下一大喜利武道会 ～TIFRound～",1,"ラフ×ラフ"],[6,775,790,"夜光性アミューズ",0,""],[4,780,795,"AQUAPLANET",0,""],[2,785,805,"22/7",0,""],[0,795,825,"STU48",0,""],[1,795,820,"THE ORCHESTRA TOKYO",0,""],[3,795,815,"フルコース",0,""],[4,795,810,"かすみ草とステラ",0,""],[6,795,810,"すべての瞬間は君だった。",0,""],[5,800,820,"feelNEO",0,""],[6,810,825,"KRD8",0,""],[2,815,835,"BNSI",0,""],[3,815,835,"いにしえ永遠？",0,""],[5,820,845,"ミキティー本物アイドル15周年特別企画 ミキティー本物祭",1,"ミキティー本物 / 二丁目の魁カミングアウト"],[6,825,840,"虹色の飛行少女",0,""],[1,830,855,"ウマ娘 プリティーダービー",0,""],[0,835,865,"ファントムシータ",0,""],[2,835,855,"豆柴の大群",0,""],[3,835,865,"【めざましWANGANフェス】コラボステージ",1,"きゅるりんってしてみて …and more"],[6,840,855,"Quubi",0,""],[5,845,865,"chuLa",0,""],[1,855,880,"のんふぃく！",0,""],[2,855,880,"IDOL SUMMER JAMBOREE DAY3",1,"selfish / Toi Toi Toi / #Mooove!"],[4,855,870,"Gran☆Ciel",0,""],[6,865,880,"AQUAPLANET",0,""],[3,870,885,"TIF de Debut 2026",0,""],[4,870,885,"LINKL PLANET",0,""],[5,870,890,"きのホ。",0,""],[0,875,905,"AVAM",0,""],[1,880,905,"タイトル未定",0,""],[6,880,895,"fav me",0,""],[3,885,905,"ワッツ◎さーくる",0,""],[4,885,900,"Root mimi",0,""],[2,890,910,"りんご娘",0,""],[5,890,910,"愛乙女★DOLL",0,""],[6,895,910,"ハルニシオン",0,""],[4,900,915,"手羽先センセーション",0,""],[3,905,925,"アルテミスの翼",0,""],[2,910,930,"iON!",0,""],[5,910,930,"Jams Collection",0,""],[6,910,925,"ハルカエコー",0,""],[0,915,945,"yosugala",0,""],[1,920,945,"ドラマチックレコード",0,""],[4,920,935,"可憐なアイボリー",0,""],[2,930,950,"にしたんクリニック タンバリンダンス選手権",1,"THE ORCHESTRA TOKYO / Sweet Alley / 二丁目の魁カミングアウト"],[3,930,950,"アイドルカレッジ",0,""],[6,930,945,"コングラッチェ！",0,""],[4,935,950,"ラナキュラ",0,""],[5,935,955,"KRD8",0,""],[1,945,970,"GILTY x GILTY",0,""],[6,945,960,"Hey!Mommy!",0,""],[3,950,970,"ルージュブック",0,""],[4,950,965,"α+",0,""],[0,955,985,"ExWHYZ",0,""],[5,955,975,"パラディーク",0,""],[6,960,975,"fishbowl",0,""],[2,965,975,"Move Next Knot",0,""],[1,970,995,"虹のコンキスタドール",0,""],[3,970,990,"虹色の飛行少女",0,""],[4,970,985,"ナナコロビヤオキ",0,""],[2,975,995,"SEKAIE☆",0,""],[5,975,995,"ワガママなラストノート",0,""],[6,975,990,"りんご娘",0,""],[4,985,1000,"Toi Toi Toi",0,""],[0,995,1025,"IS:SUE",0,""],[2,995,1015,"Palette Parade",0,""],[3,995,1015,"Ma'Scar'Piece",0,""],[6,995,1010,"My_Stage",0,""],[4,1000,1015,"二丁目の魁カミングアウト",0,""],[5,1000,1020,"テンシンランマン",0,""],[1,1005,1030,"Rain Tree",0,""],[6,1010,1025,"Root mimi",0,""],[2,1015,1035,"衛星とカラテア",0,""],[3,1015,1035,"YOLOZ",0,""],[4,1015,1030,"いにしえ永遠？",0,""],[5,1020,1040,"フルコース",0,""],[6,1025,1040,"ワッツ◎さーくる",0,""],[0,1030,1060,"わーすた",0,""],[1,1030,1055,"selfish",0,""],[3,1035,1055,"CYNHN",0,""],[4,1040,1055,"fav me",0,""],[5,1040,1060,"myojou",0,""],[2,1045,1065,"AOAO",0,""],[6,1045,1060,"ポンコツコンポ",0,""],[1,1055,1080,"CiON",0,""],[4,1055,1070,"chuLa",0,""],[3,1060,1080,"22/7_the 3rd",0,""],[6,1060,1075,"RE-GE",0,""],[2,1065,1085,"Devil ANTHEM.",0,""],[5,1065,1085,"HIBANA",0,""],[0,1070,1100,"きゅるりんってしてみて",0,""],[4,1070,1085,"iON!",0,""],[6,1075,1090,"log you",0,""],[3,1080,1100,"Hey!Mommy!",0,""],[2,1085,1105,"UtaGe!",0,""],[4,1085,1100,"feelNEO",0,""],[5,1085,1105,"手羽先センセーション",0,""],[1,1090,1115,"NANIMONO",0,""],[6,1090,1105,"SUPER☆GiRLS",0,""],[3,1100,1120,"可憐なアイボリー",0,""],[4,1105,1120,"ラフ×ラフ",0,""],[5,1105,1125,"Sweet Alley",0,""],[6,1105,1120,"#Mooove!",0,""],[0,1110,1140,"iLiFE!",0,""],[1,1115,1140,"ばってん少女隊",0,""],[2,1115,1135,"Kolokol",0,""],[4,1120,1135,"Onephony",0,""],[3,1125,1145,"メイビーME",0,""],[2,1135,1155,"CYNHN",0,""],[4,1135,1150,"Appare!",0,""],[1,1140,1165,"夜光性アミューズ",0,""],[3,1145,1165,"すてねこキャッツ",0,""],[0,1150,1190,"乃木坂46",0,""],[4,1150,1165,"ドラマチックレコード",0,""],[2,1155,1175,"NEO JAPONISM",0,""],[3,1165,1185,"LINKL PLANET",0,""],[1,1175,1200,"ハルニシオン",0,""],[4,1175,1190,"ハルカエコー",0,""],[2,1185,1205,"FES☆TIVE",0,""],[0,1190,1235,"グランドフィナーレ",1,""],[3,1190,1210,"#よーよーよー",0,""],[4,1190,1205,"Rain Tree",0,""],[1,1200,1225,"INUWASI",0,""],[2,1205,1225,"MEGAFON",0,""],[4,1205,1220,"fishbowl",0,""],[3,1210,1230,"虹のコンキスタドール",0,""],[4,1220,1235,"タイトル未定",0,""],[1,1225,1250,"GANG PARADE",0,""],[2,1225,1245,"Jams Collection",0,""],[3,1230,1250,"なみだ色の消しごむ",0,""]]],"roster":{"iON!":["あ",0],"i-COL":["あ",0],"アイテムはてるてるのみ":["あ",0],"アイドルカレッジ":["あ",1],"iLiFE!":["あ",0],"i☆Ris":["あ",0],"AOAO":["あ",1],"AQUAPLANET":["あ",0],"Axelight":["あ",1],"AsIs":["あ",1],"AdamLilith":["あ",0],"Appare!":["あ",0],"アップアップガールズ（仮）":["あ",0],"アップアップガールズ（2）":["あ",0],"AVAM":["あ",1],"アルテミスの翼":["あ",0],"α+":["あ",1],"THE ENCORE":["あ",0],"アンスリューム":["あ",1],"いぎなり東北産":["あ",0],"ExWHYZ":["あ",0],"＝LOVE":["あ",0],"いちごみるく色に染まりたい。":["あ",0],"IS:SUE":["あ",0],"いにしえ永遠？":["あ",0],"INUWASI":["あ",0],"Ill":["あ",0],"UtaGe!":["あ",1],"ウマ娘 プリティーダービー":["あ",0],"衛星とカラテア":["あ",0],"AKB48":["あ",0],"HKT48":["あ",0],"SKE48":["あ",0],"STU48":["あ",0],"NMB48":["あ",0],"NGT48":["あ",0],"THE ORCHESTRA TOKYO":["あ",0],"OCHA NORMA":["あ",0],"限りなく白く":["か",0],"柏木由紀":["か",0],"かすみ草とステラ":["か",1],"カフェオーレ（乃木坂46 五百城茉央＆奥田いろは）":["か",0],"カラフルスクリーム":["か",0],"可憐なアイボリー":["か",0],"KAWAII LAB. SOUTH":["か",0],"KAWAII LAB. MATES":["か",0],"木苺FRUCTOSE":["か",0],"KiiiKiii":["か",0],"KiSS KiSS":["か",0],"きのホ。":["か",0],"君に、胸キュン。":["か",0],"GANG PARADE":["か",0],"CANDY TUNE":["か",0],"CUTIE STREET":["か",0],"Quubi":["か",0],"きゅるりんってしてみて":["か",0],"GILTY x GILTY":["か",0],"キングサリ":["か",0],"くまま":["か",0],"クマリデパート":["か",1],"Gran☆Ciel":["か",0],"KRD8":["か",0],"KLP48":["か",0],"後藤真希":["か",0],"こみっきゅおん！":["か",0],"Kolokol":["か",1],"コングラッチェ！":["か",0],"最終未来少女":["さ",1],"CYBERJAPAN DANCERS":["さ",0],"櫻井優衣":["さ",0],"佐々木彩夏（ももいろクローバーZ）":["さ",0],"さとりモンスター":["さ",0],"さよならステイチューン":["さ",0],"zanka":["さ",0],"CiON":["さ",0],"ジエメイ":["さ",0],"SITUASION":["さ",1],"シャニムニ＝パレード":["さ",0],"Jams Collection":["さ",0],"Juice=Juice":["さ",0],"私立恵比寿中学":["さ",0],"シンデレラ宣言！":["さ",0],"Sweet Alley":["さ",1],"SWEET STEADY":["さ",0],"CYNHN":["さ",0],"SUPER☆GiRLS":["さ",0],"すーぱーぷーばぁー!!":["さ",1],"透色ドロップ":["さ",0],"STAiNY":["さ",0],"すてねこキャッツ":["さ",1],"Sparkling Eyes":["さ",0],"すべての瞬間は君だった。":["さ",0],"SEKAIE☆":["さ",1],"Sepiacode":["さ",0],"selfish":["さ",0],"タイトル未定":["た",1],"高嶺のなでしこ":["た",0],"Task have Fun":["た",0],"W.ダブルヴィー":["た",0],"ChumToto":["た",0],"chuLa":["た",1],"超ときめき♡宣伝部":["た",0],"つばきファクトリー":["た",0],"TIF de Debut 2026":["た",0],"手羽先センセーション":["た",0],"Devil ANTHEM.":["た",0],"テンシンランマン":["た",0],"点染テンセイ少女。":["た",1],"TENRIN":["た",0],"Toi Toi Toi":["た",0],"Tohkei":["た",0],"ドラマチックレコード":["た",1],"ドレスコード":["た",0],"ナナコロビヤオキ":["な",0],"22/7":["な",0],"22/7_the 3rd":["な",0],"NANIMONO":["な",0],"なみだ色の消しごむ":["な",0],"≒JOY":["な",0],"虹色の飛行少女":["な",0],"虹のコンキスタドール":["な",0],"二丁目の魁カミングアウト":["な",0],"NUANCE":["な",1],"NEO JAPONISM":["な",0],"NEKIRU":["な",0],"ネコプラpixx.":["な",0],"乃木坂46":["な",0],"≠ME":["な",0],"のんふぃく！":["な",0],"hakanai":["は",1],"buGG":["は",0],"PassCode(Band Set)":["は",0],"Pastel Closet":["は",0],"ばってん少女隊":["は",0],"パラディーク":["は",1],"ハルカエコー":["は",0],"ハルニシオン":["は",0],"Palette Parade":["は",0],"Peel the Apple":["は",1],"PIGGS":["は",0],"Pixel Ribbon":["は",0],"びっくえんじぇる":["は",1],"HIBANA":["は",0],"himawari(船橋)":["は",1],"ファーストプレイリスト":["は",1],"fav me":["は",0],"Falench.":["は",1],"ファントムシータ":["は",0],"feelNEO":["は",1],"fishbowl":["は",1],"FES☆TIVE":["は",1],"風男塾":["は",0],"フューチャーサイダー":["は",1],"PRSMIN":["は",0],"FULIT BOX":["は",0],"Primulav":["は",0],"フルコース":["は",1],"Hey!Mommy!":["は",0],"HzMe":["は",1],"僕が見たかった青空":["は",0],"WHITE SCORPION":["は",0],"ポンコツコンポ":["は",0],"BNSI":["は",0],"My_Stage":["ま",0],"MyDearDarlin'":["ま",0],"MAGICAL SPEC":["ま",1],"Ma'Scar'Piece":["ま",0],"まねきケチャ":["ま",1],"瞬きもせず":["ま",0],"豆柴の大群":["ま",0],"myojou":["ま",0],"Mirror,Mirror":["ま",1],"#Mooove!":["ま",0],"Move Next Knot":["ま",0],"メイビーME":["ま",1],"MEGAFON":["ま",0],"Merry BAD TUNE.":["ま",0],"MORE STAR":["ま",0],"諸橋沙夏（＝LOVE）":["ま",0],"夜光性アミューズ":["や・ら・わ",0],"#よーよーよー":["や・ら・わ",0],"yosugala":["や・ら・わ",0],"YOLOZ":["や・ら・わ",0],"ラストシーン":["や・ら・わ",0],"ラナキュラ":["や・ら・わ",1],"RAViDAVi":["や・ら・わ",0],"ラフ×ラフ":["や・ら・わ",1],"愛乙女★DOLL":["や・ら・わ",0],"RE-GE":["や・ら・わ",0],"LinQ":["や・ら・わ",0],"LINKL PLANET":["や・ら・わ",0],"Ringwanderung":["や・ら・わ",0],"りんご娘":["や・ら・わ",1],"RiNCENT♯":["や・ら・わ",0],"ROOKEY♡ROOKEYS":["や・ら・わ",0],"ルージュブック":["や・ら・わ",0],"Luce Twinkle Wink☆":["や・ら・わ",1],"Root mimi":["や・ら・わ",0],"Rain Tree":["や・ら・わ",0],"ロージークロニクル":["や・ら・わ",0],"log you":["や・ら・わ",0],"わーすた":["や・ら・わ",0],"ワガママなラストノート":["や・ら・わ",0],"ワッツ◎さーくる":["や・ら・わ",1],"＠onefive":["や・ら・わ",0],"Onephony":["や・ら・わ",0]},"marks":{"iLiFE!":["○",""],"AsIs":["△",""],"＝LOVE":["△","○"],"AKB48":["△","○"],"OCHA NORMA":["","○"],"カフェオーレ（乃木坂46 五百城茉央＆奥田いろは）":["△",""],"GANG PARADE":["△",""],"CANDY TUNE":["","◎"],"きゅるりんってしてみて":["","◎"],"後藤真希":["△","△"],"CYBERJAPAN DANCERS":["","△"],"櫻井優衣":["","△"],"Juice=Juice":["","◎"],"私立恵比寿中学":["△",""],"SWEET STEADY":["","△"],"CYNHN":["","△"],"タイトル未定":["○",""],"Task have Fun":["△","△"],"超ときめき♡宣伝部":["△","○"],"NANIMONO":["△",""],"≒JOY":["△",""],"虹のコンキスタドール":["○",""],"乃木坂46":["△",""],"≠ME":["△","△"],"fav me":["○","△"],"FES☆TIVE":["○",""],"フルコース":["△",""],"WHITE SCORPION":["","△"],"まねきケチャ":["△",""],"諸橋沙夏（＝LOVE）":["","△"],"ラフ×ラフ":["△",""],"ルージュブック":["◎",""],"ロージークロニクル":["△",""],"わーすた":["◎","○"]}};
-const START = 575, END = 1265; // 9:35〜21:05
+const START = 575, END = 1265;
 const STCOLOR = ["#f26d6d","#f7941d","#a8c93a","#4bb865","#5ab7e8","#6a6ad8","#e0a300"];
 const STSHORT = ["HOT","HEAT","SMILE","DOLL","SKY","TORO","浮島"];
 const STPLACE = ["青海臨時駐車場","Zepp DiverCity","湾岸スタジオ横公園","湾岸スタジオ屋内","湾岸スタジオ屋上","青海臨時駐車場","青海臨時駐車場"];
 const DAYLABEL = ["7/31(金)","8/1(土)","8/2(日)"];
 const DAYDATE = ["2026-07-31","2026-08-01","2026-08-02"];
 const CYCLE = ["","◎","○","△"];
-const LSKEY = "tif2026_pochi_v1";
+const KEY1 = "tif2026_pochi_v1", KEY2 = "tif2026_pochi_v2";
 const P0 = DATA.persons[0], P1 = DATA.persons[1];
-const INIT = DATA.marks;
 
-let marks = load() || clone(INIT);
-let day = 0, actP = 0, selOnly = false, query = "";
-let mhSteps = [1.7, 2.4, 3.2], mhIdx = 1;
-
-function clone(o){ return JSON.parse(JSON.stringify(o)); }
-function load(){ try{ const s = localStorage.getItem(LSKEY); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
-function save(){ try{ localStorage.setItem(LSKEY, JSON.stringify(marks)); }catch(e){} }
-function hm(min){ return Math.floor(min/60) + ":" + ("0"+min%60).slice(-2); }
-function getMark(name, p){ return (marks[name]||["",""])[p] || ""; }
-function markOf(slot){ // [m0,m1] 直接名 or 備考/企画名内の推し
-  const direct = marks[slot[3]];
-  if (direct) return direct;
+// ===== マークは「枠単位」(v2)。key = "日:枠index" =====
+function rank(m){ const i = CYCLE.indexOf(m); return i < 0 ? 0 : i; }
+function initMarkOf(slot, groupMarks){ // グループ単位マーク→この枠の初期値
+  const direct = groupMarks[slot[3]];
+  if (direct) return [direct[0]||"", direct[1]||""];
   let best = ["",""];
-  for (const k in marks){
+  for (const k in groupMarks){
     if (slot[3].includes(k) || (slot[5]||"").includes(k)){
       for (const p of [0,1]){
-        if (CYCLE.indexOf(marks[k][p]) > 0 && (CYCLE.indexOf(best[p]) === 0 || CYCLE.indexOf(marks[k][p]) < CYCLE.indexOf(best[p]))) best[p] = marks[k][p];
+        const v = groupMarks[k][p] || "";
+        if (rank(v) > 0 && (rank(best[p]) === 0 || rank(v) < rank(best[p]))) best[p] = v;
       }
     }
   }
   return best;
 }
-function isIndirect(slot){ return !marks[slot[3]] && (markOf(slot)[0] || markOf(slot)[1]); }
+function expand(groupMarks){
+  const out = {};
+  DATA.days.forEach((slots, d)=>{
+    slots.forEach((sl, i)=>{
+      const mk = initMarkOf(sl, groupMarks);
+      if (mk[0] || mk[1]) out[d+":"+i] = mk;
+    });
+  });
+  return out;
+}
+function lsGet(k){ try{ const s = localStorage.getItem(k); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
+function save(){ try{ localStorage.setItem(KEY2, JSON.stringify(marks)); }catch(e){} }
+function looksV1(obj){ return obj && Object.keys(obj).some(k=>!/^\d+:\d+$/.test(k)); }
+
+let marks = lsGet(KEY2);
+if (!marks){
+  const v1 = lsGet(KEY1);
+  marks = expand(v1 || DATA.marks); // 旧データがあれば引き継いで枠単位に変換
+  save();
+}
+let day = 0, actP = 0, selOnly = false, query = "";
+const ZOOM = [[1.7,96],[2.4,128],[3.2,164]];
+let zIdx = 1;
+
+function hm(min){ return Math.floor(min/60) + ":" + ("0"+min%60).slice(-2); }
+function mk(d, i){ return marks[d+":"+i] || ["",""]; }
 
 // ===== grid =====
 const grid = document.getElementById("grid");
-function mh(){ return mhSteps[mhIdx]; }
+const scroller = document.getElementById("scroller");
+function mh(){ return ZOOM[zIdx][0]; }
 function build(){
+  document.documentElement.style.setProperty("--cw", ZOOM[zIdx][1]+"px");
   grid.innerHTML = "";
   grid.style.gridTemplateColumns = `var(--axw) repeat(7, var(--cw))`;
   const H = (END - START) * mh();
-  // header row
   grid.appendChild(el("div","corner",""));
   DATA.stages.forEach((s,i)=>{
     const h = el("div","sthead", `${s}<small>${STPLACE[i]}</small>`);
     h.style.background = STCOLOR[i];
     grid.appendChild(h);
   });
-  // axis
   const ax = el("div","axis","");
   ax.style.height = H+"px";
   for (let t = Math.ceil(START/30)*30; t <= END; t += 30){
@@ -198,7 +219,6 @@ function build(){
     }
   }
   grid.appendChild(ax);
-  // columns
   const slots = DATA.days[day];
   const confs = confSet();
   for (let st = 0; st < 7; st++){
@@ -209,10 +229,7 @@ function build(){
       ln.style.top = (t-START)*mh()+"px";
       col.appendChild(ln);
     }
-    slots.forEach((sl,idx)=>{
-      if (sl[0] !== st) return;
-      col.appendChild(itemEl(sl, idx, confs));
-    });
+    slots.forEach((sl,idx)=>{ if (sl[0] === st) col.appendChild(itemEl(sl, idx, confs)); });
     grid.appendChild(col);
   }
   nowline();
@@ -220,55 +237,37 @@ function build(){
 }
 function itemEl(sl, idx, confs){
   const [st,s,e,name,sp,bk] = sl;
-  const mk = markOf(sl);
+  const m = mk(day, idx);
   const d = el("div","item","");
   d.style.top = (s-START)*mh()+"px";
   d.style.height = Math.max((e-s)*mh()-2, 12)+"px";
   d.style.borderLeftColor = STCOLOR[st];
   if (sp) d.classList.add("sp");
-  if (mk[0]) d.classList.add("mka");
-  if (mk[1]) d.classList.add("mshi");
+  if (m[0]) d.classList.add("mka");
+  if (m[1]) d.classList.add("mshi");
   if (confs.has(idx)) d.classList.add("conf");
   const prem = (DATA.roster[name]||[0,0])[1];
   const q = query.trim();
   if (q && !(name.includes(q) || (bk||"").includes(q))) d.classList.add("dim");
-  if (selOnly && !mk[0] && !mk[1]) d.style.display = "none";
+  if (selOnly && !m[0] && !m[1]) d.style.display = "none";
   d.innerHTML =
    `<div class="tm">${confs.has(idx)?'<span class="warn">⚠</span>':''}${hm(s)}-${hm(e)}${prem?'<span class="crown">👑</span>':''}</div>`+
    `<div class="nm">${esc(name)}</div>`+
-   `<div class="badges">${mk[0]?`<span class="bdg bka">${P0[0]}${mk[0]}</span>`:""}${mk[1]?`<span class="bdg bshi">${P1[0]}${mk[1]}</span>`:""}</div>`;
+   `<div class="badges">${m[0]?`<span class="bdg bka">${P0[0]}${m[0]}</span>`:""}${m[1]?`<span class="bdg bshi">${P1[0]}${m[1]}</span>`:""}</div>`;
   if (bk) d.title = bk;
-  d.addEventListener("click", ()=>tap(sl));
+  d.addEventListener("click", ()=>{
+    const id = day+":"+idx;
+    const cur = mk(day, idx).slice();
+    cur[actP] = CYCLE[(rank(cur[actP])+1) % 4];
+    if (!cur[0] && !cur[1]) delete marks[id]; else marks[id] = cur;
+    save(); build();
+  });
   return d;
-}
-function tap(sl){
-  const name = sl[3];
-  const key = marks[name] ? name : indirectKey(sl);
-  if (key !== name && key){
-    // 備考出演枠→グループ本体のマークをいじる
-    const cur = getMark(key, actP);
-    setMark(key, nextMark(cur));
-    toast(`${key} を ${getMark(key,actP)||"解除"}（${DATA.persons[actP]}）`);
-  } else {
-    const cur = getMark(name, actP);
-    setMark(name, nextMark(cur));
-  }
-  build();
-}
-function indirectKey(sl){
-  for (const k in marks){ if (sl[3].includes(k) || (sl[5]||"").includes(k)) return k; }
-  return null;
-}
-function nextMark(cur){ return CYCLE[(CYCLE.indexOf(cur)+1) % 4]; }
-function setMark(name, v){
-  if (!marks[name]) marks[name] = ["",""];
-  marks[name][actP] = v;
-  if (!marks[name][0] && !marks[name][1]) delete marks[name];
-  save();
 }
 function confSet(){
   const slots = DATA.days[day];
-  const marked = slots.map((sl,i)=>({i,sl,mk:markOf(sl)})).filter(x=>x.mk[0]||x.mk[1]);
+  const marked = [];
+  slots.forEach((sl,i)=>{ const m = mk(day,i); if (m[0]||m[1]) marked.push({i,sl}); });
   const out = new Set();
   for (let a = 0; a < marked.length; a++)
     for (let b = a+1; b < marked.length; b++){
@@ -280,58 +279,56 @@ function confSet(){
 function stats(){
   const slots = DATA.days[day];
   let n0=0,n1=0;
-  slots.forEach(sl=>{ const mk=markOf(sl); if(mk[0])n0++; if(mk[1])n1++; });
+  slots.forEach((sl,i)=>{ const m=mk(day,i); if(m[0])n0++; if(m[1])n1++; });
   const nc = confSet().size;
   document.getElementById("stats").innerHTML =
    `${DAYLABEL[day]}：<b style="color:#ffd6ea">${P0} ${n0}枠</b> / <b style="color:#c6f3ff">${P1} ${n1}枠</b>` +
    (nc?` / <b style="color:#ffb3b3">⚠被り${nc}枠</b>`:" / 被りなし");
 }
 function nowline(){
-  const old = document.getElementById("nowline");
-  if (old) old.remove();
   const now = new Date();
   const ymd = now.getFullYear()+"-"+("0"+(now.getMonth()+1)).slice(-2)+"-"+("0"+now.getDate()).slice(-2);
   if (ymd !== DAYDATE[day]) return;
   const min = now.getHours()*60 + now.getMinutes();
   if (min < START || min > END) return;
-  const ln = el("div","","");
-  ln.id = "nowline";
-  ln.style.top = (min-START)*mh()+"px";
-  ln.style.gridColumn = "1 / -1";
-  const cols = grid.querySelectorAll(".colbody");
-  cols.forEach(c=>{ const l = ln.cloneNode(); l.id=""; l.style.position="absolute"; c.appendChild(l); });
+  grid.querySelectorAll(".colbody").forEach(c=>{
+    const l = el("div","nowline","");
+    l.style.top = (min-START)*mh()+"px";
+    c.appendChild(l);
+  });
 }
-setInterval(()=>{ nowline(); }, 60000);
+setInterval(()=>{ document.querySelectorAll(".nowline").forEach(x=>x.remove()); nowline(); }, 60000);
 
 // ===== list =====
 function openList(){
   const slots = DATA.days[day];
-  const rows = slots.map((sl,i)=>({sl,mk:markOf(sl),ind:isIndirect(sl)})).filter(x=>x.mk[0]||x.mk[1]);
-  rows.sort((a,b)=>a.sl[1]-b.sl[1] || a.sl[0]-b.sl[0]);
   const confs = confSet();
+  const rows = [];
+  slots.forEach((sl,i)=>{ const m = mk(day,i); if (m[0]||m[1]) rows.push({sl,i,m}); });
+  rows.sort((a,b)=>a.sl[1]-b.sl[1] || a.sl[0]-b.sl[0]);
   const body = document.getElementById("listBody");
   document.getElementById("listTitle").textContent = `${DAYLABEL[day]} マイ予定（${rows.length}枠）`;
   body.innerHTML = rows.length ? "" : "<p>この日はまだチェックがありません。</p>";
-  const idxmap = new Map(DATA.days[day].map((sl,i)=>[sl,i]));
   rows.forEach(x=>{
     const [st,s,e,name,sp,bk] = x.sl;
-    const r = el("div","lrow"+(confs.has(idxmap.get(x.sl))?" confr":""),"");
+    const r = el("div","lrow"+(confs.has(x.i)?" confr":""),"");
     r.innerHTML = `<span class="t">${hm(s)}<br>${hm(e)}</span>`+
      `<span class="chip" style="background:${STCOLOR[st]}">${STSHORT[st]}</span>`+
-     `<span class="n">${esc(name)}${x.ind&&bk?`<small>${esc(bk)}</small>`:(sp&&bk?`<small>${esc(bk)}</small>`:"")}</span>`+
-     `${x.mk[0]?`<span class="bdg bka">${P0[0]}${x.mk[0]}</span>`:""}${x.mk[1]?`<span class="bdg bshi">${P1[0]}${x.mk[1]}</span>`:""}`;
+     `<span class="n">${esc(name)}${bk?`<small>${esc(bk)}</small>`:""}</span>`+
+     `${x.m[0]?`<span class="bdg bka">${P0[0]}${x.m[0]}</span>`:""}${x.m[1]?`<span class="bdg bshi">${P1[0]}${x.m[1]}</span>`:""}`;
     body.appendChild(r);
   });
   show("listOvl");
 }
 function copyList(){
   const slots = DATA.days[day];
-  const rows = slots.map(sl=>({sl,mk:markOf(sl)})).filter(x=>x.mk[0]||x.mk[1]);
+  const rows = [];
+  slots.forEach((sl,i)=>{ const m = mk(day,i); if (m[0]||m[1]) rows.push({sl,m}); });
   rows.sort((a,b)=>a.sl[1]-b.sl[1]);
   let txt = `【TIF2026 ${DAYLABEL[day]} マイ予定】\n`;
   rows.forEach(x=>{
     const [st,s,e,name] = x.sl;
-    const tags = [x.mk[0]?`${P0[0]}${x.mk[0]}`:"", x.mk[1]?`${P1[0]}${x.mk[1]}`:""].filter(Boolean).join(" ");
+    const tags = [x.m[0]?`${P0[0]}${x.m[0]}`:"", x.m[1]?`${P1[0]}${x.m[1]}`:""].filter(Boolean).join(" ");
     txt += `${hm(s)}-${hm(e)} ${name}【${STSHORT[st]}】${tags}\n`;
   });
   copy(txt, "マイ予定をコピーしました");
@@ -343,15 +340,14 @@ function openShare(){
   document.getElementById("impCode").value = "";
   show("shareOvl");
 }
-function code(){
-  return btoa(unescape(encodeURIComponent(JSON.stringify(marks))));
-}
+function code(){ return btoa(unescape(encodeURIComponent(JSON.stringify(marks)))); }
 function doImport(){
   const v = document.getElementById("impCode").value.trim();
   if (!v) return toast("コードを貼り付けてください");
   try{
-    const obj = JSON.parse(decodeURIComponent(escape(atob(v))));
-    if (typeof obj !== "object") throw 0;
+    let obj = JSON.parse(decodeURIComponent(escape(atob(v))));
+    if (typeof obj !== "object" || !obj) throw 0;
+    if (looksV1(obj)) obj = expand(obj); // 旧形式コードも取り込める
     if (!confirm("今のチェックを、貼り付けたコードの内容に置き換えます。OK？")) return;
     marks = obj; save(); build(); hide("shareOvl"); toast("取り込みました");
   }catch(e){ toast("コードが読めませんでした"); }
@@ -378,8 +374,6 @@ function fallbackCopy(txt, msg){
   try{ document.execCommand("copy"); toast(msg); }catch(e){ toast("コピーできませんでした"); }
   ta.remove();
 }
-
-// person pill
 const pill = document.getElementById("personPill");
 DATA.persons.forEach((p,i)=>{
   const b = document.createElement("button");
@@ -393,38 +387,31 @@ DATA.persons.forEach((p,i)=>{
   });
   pill.appendChild(b);
 });
-// tabs
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     day = +t.dataset.day;
     document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on", x===t));
     build();
-    document.getElementById("scroller").scrollTop = 0;
+    scroller.scrollTop = 0;
   });
 });
 document.querySelector(".tab.d0").classList.add("on");
-// filters
 document.getElementById("fAll").addEventListener("click", e=>{ selOnly=false; togglePill(e.target); build(); });
 document.getElementById("fSel").addEventListener("click", e=>{ selOnly=true; togglePill(e.target); build(); });
 function togglePill(btn){ btn.parentNode.querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===btn)); }
-// search
 document.getElementById("search").addEventListener("input", e=>{ query = e.target.value; build(); });
-// zoom
-document.getElementById("zIn").addEventListener("click", ()=>{ mhIdx = Math.min(mhIdx+1, mhSteps.length-1); build(); });
-document.getElementById("zOut").addEventListener("click", ()=>{ mhIdx = Math.max(mhIdx-1, 0); build(); });
-// buttons
+document.getElementById("zIn").addEventListener("click", ()=>{ zIdx = Math.min(zIdx+1, ZOOM.length-1); build(); });
+document.getElementById("zOut").addEventListener("click", ()=>{ zIdx = Math.max(zIdx-1, 0); build(); });
 document.getElementById("btnList").addEventListener("click", openList);
 document.getElementById("btnCopy").addEventListener("click", copyList);
 document.getElementById("btnShare").addEventListener("click", openShare);
 document.getElementById("btnExp").addEventListener("click", ()=>copy(code(), "共有コードをコピーしました"));
 document.getElementById("btnImp").addEventListener("click", doImport);
 document.getElementById("btnReset").addEventListener("click", ()=>{
-  if (confirm("エクセル入力時点のチェックに戻します。OK？")){ marks = clone(INIT); save(); build(); hide("shareOvl"); toast("リセットしました"); }
+  if (confirm("エクセル入力時点のチェックに戻します。OK？")){ marks = expand(DATA.marks); save(); build(); hide("shareOvl"); toast("リセットしました"); }
 });
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>hide(b.dataset.close)));
 document.querySelectorAll(".ovl").forEach(o=>o.addEventListener("click", e=>{ if(e.target===o) o.classList.remove("show"); }));
-
-// 初日を今日に合わせる
 (function(){
   const t = new Date(), ymd = t.toISOString().slice(0,10);
   const i = DAYDATE.indexOf(ymd);
