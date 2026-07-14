@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0e7ac4">
 <title>TIF2026 ぽちぽちタイムテーブル（かずぽよ＆しゃ専用）</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
 :root{--mh:2.4;--cw:128px;--axw:42px;--hdr:#0e7ac4;
  --c-ka:#ff4f9e;--c-shi:#00a6c8;
@@ -18,6 +20,10 @@ button,input{touch-action:manipulation}
 header{padding:6px 10px 4px;flex:none}
 h1{font-size:15px;margin:0 0 6px;font-weight:800;letter-spacing:.02em}
 h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
+#sync{font-size:10px;font-weight:800;border-radius:10px;padding:2px 8px;margin-left:8px;vertical-align:2px;background:rgba(255,255,255,.25)}
+#sync.on{background:#2ecc71;color:#04331a}
+#sync.off{background:#f1c40f;color:#4d3a00}
+.roomin{width:100%;font-size:16px;border:2px solid #0e7ac4;border-radius:8px;padding:8px}
 .rowflex{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
 .tabs{display:flex;gap:6px}
 .tab{border:none;border-radius:8px;padding:7px 14px;font-weight:800;font-size:13px;cursor:pointer;
@@ -94,7 +100,7 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
 </head>
 <body>
 <header>
- <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 専用 v2</small></h1>
+ <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 専用 v3</small><span id="sync">ローカル</span></h1>
  <div id="tips">タップでその枠だけチェック（なし→◎→○→△）。<b>長押し</b>で同じコの他の出演枠一覧→タップで移動。<button onclick="this.parentNode.style.display='none'">OK</button></div>
  <div class="rowflex">
   <div class="tabs">
@@ -126,7 +132,12 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
  <div class="panel-h">🔗 共有・設定<button class="x" data-close="shareOvl">閉じる</button></div>
  <div class="panel-b">
   <div class="share-sec">
-   <h3>共有コードを出す（自分→相手）</h3>
+   <h3>🤝 ふたりの同期</h3>
+   <div class="note" id="syncInfo">未設定</div>
+   <button class="btn" id="btnRoomOpen">あいことばを設定・変更</button>
+  </div>
+  <div class="share-sec">
+   <h3>共有コードを出す（自分→相手）※同期が使えないときの予備</h3>
    <textarea id="expCode" readonly></textarea>
    <button class="btn" id="btnExp">コードをコピー</button>
    <div class="note">LINEなどで相手に送ってください。</div>
@@ -139,6 +150,18 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
   <div class="share-sec">
    <h3>リセット</h3>
    <button class="btn danger" id="btnReset">エクセル時点のチェックに戻す</button>
+  </div>
+ </div>
+</div></div>
+<div class="ovl" id="roomOvl"><div class="panel">
+ <div class="panel-h">🤝 ふたりの同期設定<button class="x" data-close="roomOvl">閉じる</button></div>
+ <div class="panel-b">
+  <div class="share-sec">
+   <h3>あいことばを入力</h3>
+   <input id="roomWord" class="roomin" type="text" placeholder="例: tif2026さいこう">
+   <div class="note">かずぽよ＆しゃで<b>同じあいことば</b>を入れると、チェックがリアルタイムで共有されます。他の人に推測されにくい言葉にしてください。</div>
+   <button class="btn" id="btnRoomGo" style="background:#0e7ac4;color:#fff;margin-top:8px">この あいことば で同期開始</button>
+   <button class="btn" id="btnRoomSkip" style="background:#888;color:#fff;margin-top:8px">あとで（同期なしで使う）</button>
   </div>
  </div>
 </div></div>
@@ -202,6 +225,63 @@ let zIdx = 1;
 
 function hm(min){ return Math.floor(min/60) + ":" + ("0"+min%60).slice(-2); }
 function mk(d, i){ return marks[d+":"+i] || ["",""]; }
+
+// ===== ふたりの同期 (Firebase Realtime Database) =====
+const FBCONF = {
+  apiKey: "AIzaSyAL6EBjUZ60FnQ6deOLro5UQXqDdbdabXM",
+  authDomain: "tif2026-8800d.firebaseapp.com",
+  databaseURL: "https://tif2026-8800d-default-rtdb.firebaseio.com",
+  projectId: "tif2026-8800d",
+  storageBucket: "tif2026-8800d.firebasestorage.app",
+  messagingSenderId: "183432602717",
+  appId: "1:183432602717:web:fe26f853f166b3824799b4"
+};
+const KEYR = "tif2026_pochi_room";
+const FB_OK = typeof firebase !== "undefined" && !!firebase.initializeApp;
+let dbRef = null, syncOn = false, aikotoba = null;
+try{ aikotoba = localStorage.getItem(KEYR) || null; }catch(e){}
+function setSyncUI(state, label){
+  const s = document.getElementById("sync");
+  s.className = state; s.textContent = label;
+}
+function roomHash(w){
+  let h1 = 5381, h2 = 52711;
+  for (const c of w){ const x = c.codePointAt(0); h1 = ((h1*33) ^ x) >>> 0; h2 = (h2*31 + x) >>> 0; }
+  return "r" + h1.toString(36) + h2.toString(36);
+}
+let rebuildT = null;
+function startSync(word){
+  if (!FB_OK){ setSyncUI("off","接続不可"); toast("同期サーバーに接続できません"); return; }
+  try{ localStorage.setItem(KEYR, word); }catch(e){}
+  aikotoba = word;
+  if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FBCONF);
+  if (dbRef) dbRef.off();
+  dbRef = firebase.database().ref("rooms/" + roomHash(word) + "/marks");
+  let first = true;
+  dbRef.on("value", snap=>{
+    const val = snap.val();
+    if (first){
+      first = false;
+      if ((!val || !Object.keys(val).length) && Object.keys(marks).length){
+        dbRef.set(marks); // この端末のチェックを部屋の初期データにする
+        return;
+      }
+    }
+    marks = val || {};
+    save();
+    clearTimeout(rebuildT); rebuildT = setTimeout(build, 120);
+  }, ()=>setSyncUI("off","同期エラー"));
+  firebase.database().ref(".info/connected").on("value", s=>{
+    syncOn = !!s.val();
+    setSyncUI(syncOn ? "on" : "off", syncOn ? "🤝同期中" : "接続待ち…");
+  });
+}
+function syncSlot(id){
+  if (!dbRef) return;
+  const v = marks[id];
+  if (v) dbRef.child(id).set(v); else dbRef.child(id).remove();
+}
+function syncAll(){ if (dbRef) dbRef.set(marks); }
 
 // ===== 同グループの他出演枠 =====
 const ROSTER_KEYS = Object.keys(DATA.roster);
@@ -339,7 +419,7 @@ function itemEl(sl, idx, confs){
     const cur = mk(day, idx).slice();
     cur[actP] = CYCLE[(rank(cur[actP])+1) % 4];
     if (!cur[0] && !cur[1]) delete marks[id]; else marks[id] = cur;
-    save(); build();
+    save(); syncSlot(id); build();
   });
   return d;
 }
@@ -418,6 +498,9 @@ function copyList(){
 function openShare(){
   document.getElementById("expCode").value = code();
   document.getElementById("impCode").value = "";
+  document.getElementById("syncInfo").textContent = aikotoba
+    ? `あいことば「${aikotoba}」で同期${syncOn ? "中 🟢" : "設定済み（接続待ち）"}`
+    : "未設定（この端末だけの保存になっています）";
   show("shareOvl");
 }
 function code(){ return btoa(unescape(encodeURIComponent(JSON.stringify(marks)))); }
@@ -429,7 +512,7 @@ function doImport(){
     if (typeof obj !== "object" || !obj) throw 0;
     if (looksV1(obj)) obj = expand(obj); // 旧形式コードも取り込める
     if (!confirm("今のチェックを、貼り付けたコードの内容に置き換えます。OK？")) return;
-    marks = obj; save(); build(); hide("shareOvl"); toast("取り込みました");
+    marks = obj; save(); syncAll(); build(); hide("shareOvl"); toast("取り込みました");
   }catch(e){ toast("コードが読めませんでした"); }
 }
 
@@ -488,16 +571,30 @@ document.getElementById("btnShare").addEventListener("click", openShare);
 document.getElementById("btnExp").addEventListener("click", ()=>copy(code(), "共有コードをコピーしました"));
 document.getElementById("btnImp").addEventListener("click", doImport);
 document.getElementById("btnReset").addEventListener("click", ()=>{
-  if (confirm("エクセル入力時点のチェックに戻します。OK？")){ marks = expand(DATA.marks); save(); build(); hide("shareOvl"); toast("リセットしました"); }
+  if (confirm("エクセル入力時点のチェックに戻します（同期中なら相手側も戻ります）。OK？")){ marks = expand(DATA.marks); save(); syncAll(); build(); hide("shareOvl"); toast("リセットしました"); }
 });
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click", ()=>hide(b.dataset.close)));
 document.querySelectorAll(".ovl").forEach(o=>o.addEventListener("click", e=>{ if(e.target===o) o.classList.remove("show"); }));
+document.getElementById("btnRoomOpen").addEventListener("click", ()=>{
+  hide("shareOvl");
+  document.getElementById("roomWord").value = aikotoba || "";
+  show("roomOvl");
+});
+document.getElementById("btnRoomGo").addEventListener("click", ()=>{
+  const w = document.getElementById("roomWord").value.trim();
+  if (!w) return toast("あいことばを入力してください");
+  hide("roomOvl"); startSync(w); toast("同期を開始しました");
+});
+document.getElementById("btnRoomSkip").addEventListener("click", ()=>hide("roomOvl"));
 (function(){
   const t = new Date(), ymd = t.toISOString().slice(0,10);
   const i = DAYDATE.indexOf(ymd);
   if (i > 0){ document.querySelectorAll(".tab")[i].click(); }
 })();
 build();
+if (FB_OK && aikotoba) startSync(aikotoba);
+else if (FB_OK) show("roomOvl");
+else setSyncUI("", "ローカル");
 </script>
 </body>
 </html>
