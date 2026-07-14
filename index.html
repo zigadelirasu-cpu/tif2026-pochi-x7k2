@@ -157,11 +157,11 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
  <div class="panel-h">🤝 ふたりの同期設定<button class="x" data-close="roomOvl">閉じる</button></div>
  <div class="panel-b">
   <div class="share-sec">
-   <h3>あいことばを入力</h3>
-   <input id="roomWord" class="roomin" type="text" placeholder="例: tif2026さいこう">
-   <div class="note">かずぽよ＆しゃで<b>同じあいことば</b>を入れると、チェックがリアルタイムで共有されます。他の人に推測されにくい言葉にしてください。</div>
-   <button class="btn" id="btnRoomGo" style="background:#0e7ac4;color:#fff;margin-top:8px">この あいことば で同期開始</button>
-   <button class="btn" id="btnRoomSkip" style="background:#888;color:#fff;margin-top:8px">あとで（同期なしで使う）</button>
+   <h3>あいことば（通常は設定不要）</h3>
+   <div class="note">ふだんは何もしなくても自動でふたりの部屋につながります。もし知らない人にチェックをいじられた場合だけ、2人で<b>同じあいことば</b>を決めて入力すると、鍵付きの別部屋に引っ越せます。</div>
+   <input id="roomWord" class="roomin" type="text" placeholder="例: tif2026さいこう" style="margin-top:8px">
+   <button class="btn" id="btnRoomGo" style="background:#0e7ac4;color:#fff;margin-top:8px">この あいことば の部屋に切り替え</button>
+   <button class="btn" id="btnRoomSkip" style="background:#888;color:#fff;margin-top:8px">自動設定（あいことばなし）に戻す</button>
   </div>
  </div>
 </div></div>
@@ -237,6 +237,7 @@ const FBCONF = {
   appId: "1:183432602717:web:fe26f853f166b3824799b4"
 };
 const KEYR = "tif2026_pochi_room";
+const DEFAULT_WORD = "kzpy-sha-auto-x9q2mvt74kfj83"; // ふたりの自動ルーム
 const FB_OK = typeof firebase !== "undefined" && !!firebase.initializeApp;
 let dbRef = null, syncOn = false, aikotoba = null;
 try{ aikotoba = localStorage.getItem(KEYR) || null; }catch(e){}
@@ -252,8 +253,11 @@ function roomHash(w){
 let rebuildT = null;
 function startSync(word){
   if (!FB_OK){ setSyncUI("off","接続不可"); toast("同期サーバーに接続できません"); return; }
-  try{ localStorage.setItem(KEYR, word); }catch(e){}
-  aikotoba = word;
+  try{
+    if (word === DEFAULT_WORD) localStorage.removeItem(KEYR);
+    else localStorage.setItem(KEYR, word);
+  }catch(e){}
+  aikotoba = (word === DEFAULT_WORD) ? null : word;
   if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FBCONF);
   if (dbRef) dbRef.off();
   dbRef = firebase.database().ref("rooms/" + roomHash(word) + "/marks");
@@ -498,9 +502,9 @@ function copyList(){
 function openShare(){
   document.getElementById("expCode").value = code();
   document.getElementById("impCode").value = "";
-  document.getElementById("syncInfo").textContent = aikotoba
-    ? `あいことば「${aikotoba}」で同期${syncOn ? "中 🟢" : "設定済み（接続待ち）"}`
-    : "未設定（この端末だけの保存になっています）";
+  document.getElementById("syncInfo").textContent =
+    (aikotoba ? `あいことば「${aikotoba}」の部屋で` : "自動設定（あいことばなし）で") +
+    (syncOn ? "同期中 🟢" : (FB_OK ? "接続待ち…" : "未接続（ローカルのみ）"));
   show("shareOvl");
 }
 function code(){ return btoa(unescape(encodeURIComponent(JSON.stringify(marks)))); }
@@ -585,15 +589,16 @@ document.getElementById("btnRoomGo").addEventListener("click", ()=>{
   if (!w) return toast("あいことばを入力してください");
   hide("roomOvl"); startSync(w); toast("同期を開始しました");
 });
-document.getElementById("btnRoomSkip").addEventListener("click", ()=>hide("roomOvl"));
+document.getElementById("btnRoomSkip").addEventListener("click", ()=>{
+  hide("roomOvl"); startSync(DEFAULT_WORD); toast("自動設定に戻しました");
+});
 (function(){
   const t = new Date(), ymd = t.toISOString().slice(0,10);
   const i = DAYDATE.indexOf(ymd);
   if (i > 0){ document.querySelectorAll(".tab")[i].click(); }
 })();
 build();
-if (FB_OK && aikotoba) startSync(aikotoba);
-else if (FB_OK) show("roomOvl");
+if (FB_OK) startSync(aikotoba || DEFAULT_WORD);
 else setSyncUI("", "ローカル");
 </script>
 </body>
