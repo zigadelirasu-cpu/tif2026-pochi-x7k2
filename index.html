@@ -62,6 +62,12 @@ h1 small{font-weight:600;opacity:.8;font-size:11px;margin-left:6px}
 .item.mka.mshi{background:linear-gradient(135deg,var(--tint-ka) 49%,var(--tint-shi) 51%)}
 .item.dim{opacity:.22}
 .item.conf{box-shadow:0 0 0 2px #e02020,0 1px 2px rgba(0,0,0,.2)}
+.item.aka{box-shadow:inset 0 0 0 2px var(--c-ka),0 1px 2px rgba(0,0,0,.2)}
+.item.ashi{box-shadow:inset 0 0 0 2px var(--c-shi),0 1px 2px rgba(0,0,0,.2)}
+.item.aka.ashi{box-shadow:inset 0 0 0 2px var(--c-ka),inset 0 0 0 4px var(--c-shi),0 1px 2px rgba(0,0,0,.2)}
+#expImg{width:100%;border:1px solid #dde;border-radius:8px}
+.exp-btns{display:flex;gap:8px;margin-top:10px}
+.exp-btns .btn{background:#0e7ac4;color:#fff;flex:1}
 .badges{position:absolute;top:1px;right:2px;display:flex;gap:2px}
 .bdg{font-size:9px;font-weight:800;color:#fff;border-radius:7px;padding:0 4px;line-height:13px}
 .bka{background:var(--c-ka)}.bshi{background:var(--c-shi)}
@@ -100,8 +106,8 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
 </head>
 <body>
 <header>
- <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 専用 v3</small><span id="sync">ローカル</span></h1>
- <div id="tips">タップでその枠だけチェック（なし→◎→○→△）。<b>長押し</b>で同じコの他の出演枠一覧→タップで移動。<button onclick="this.parentNode.style.display='none'">OK</button></div>
+ <h1>TIF2026 ぽちぽちタイムテーブル<small>かずぽよ＆しゃ 参戦記録 v4</small><span id="sync">ローカル</span></h1>
+ <div id="tips">「✔参戦」モードで行った公演をタップ（✎で誰の分か切替）→「📸画像」で1日ずつX用に書き出せます。<button onclick="this.parentNode.style.display='none'">OK</button></div>
  <div class="rowflex">
   <div class="tabs">
    <button class="tab d0" data-day="0">7/31 金</button>
@@ -110,11 +116,15 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
   </div>
   <div class="pill" id="personPill"></div>
   <div class="pill">
+   <button id="mPlan" class="on">✎予定</button><button id="mAtt">✔参戦</button>
+  </div>
+  <div class="pill">
    <button id="fAll" class="on">全部</button><button id="fSel">チェックのみ</button>
   </div>
  </div>
  <div class="rowflex">
   <input id="search" type="search" placeholder="グループ検索">
+  <button class="btn" id="btnExport">📸 画像</button>
   <button class="btn" id="btnList">📋 マイ予定</button>
   <button class="btn" id="btnShare">🔗 共有・設定</button>
   <button class="btn" id="zOut">−</button><button class="btn" id="zIn">＋</button>
@@ -151,6 +161,17 @@ textarea{width:100%;height:110px;font-size:16px;border:1px solid #cdd;border-rad
    <h3>リセット</h3>
    <button class="btn danger" id="btnReset">エクセル時点のチェックに戻す</button>
   </div>
+ </div>
+</div></div>
+<div class="ovl" id="expOvl"><div class="panel">
+ <div class="panel-h">📸 <span id="expTitle"></span><button class="x" data-close="expOvl">閉じる</button></div>
+ <div class="panel-b">
+  <img id="expImg" alt="参戦記録画像">
+  <div class="exp-btns">
+   <button class="btn" id="btnPng">PNGで保存</button>
+   <button class="btn" id="btnJpg">JPGで保存</button>
+  </div>
+  <div class="note">スマホは画像を長押し→「写真に保存」でもOK。そのままXに貼れます。</div>
  </div>
 </div></div>
 <div class="ovl" id="roomOvl"><div class="panel">
@@ -226,6 +247,13 @@ let zIdx = 1;
 function hm(min){ return Math.floor(min/60) + ":" + ("0"+min%60).slice(-2); }
 function mk(d, i){ return marks[d+":"+i] || ["",""]; }
 
+// ===== 参戦記録（行った公演）=====
+const KEYA = "tif2026_pochi_att_v1";
+let attend = lsGet(KEYA) || {};
+let mode = "att"; // "plan"=予定編集 / "att"=参戦記録
+function saveAtt(){ try{ localStorage.setItem(KEYA, JSON.stringify(attend)); }catch(e){} }
+function at(d, i){ return attend[d+":"+i] || [0,0]; }
+
 // ===== ふたりの同期 (Firebase Realtime Database) =====
 const FBCONF = {
   apiKey: "AIzaSyAL6EBjUZ60FnQ6deOLro5UQXqDdbdabXM",
@@ -239,7 +267,7 @@ const FBCONF = {
 const KEYR = "tif2026_pochi_room";
 const DEFAULT_WORD = "kzpy-sha-auto-x9q2mvt74kfj83"; // ふたりの自動ルーム
 const FB_OK = typeof firebase !== "undefined" && !!firebase.initializeApp;
-let dbRef = null, syncOn = false, aikotoba = null;
+let dbRef = null, atRef = null, syncOn = false, aikotoba = null;
 try{ aikotoba = localStorage.getItem(KEYR) || null; }catch(e){}
 function setSyncUI(state, label){
   const s = document.getElementById("sync");
@@ -260,7 +288,21 @@ function startSync(word){
   aikotoba = (word === DEFAULT_WORD) ? null : word;
   if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FBCONF);
   if (dbRef) dbRef.off();
-  dbRef = firebase.database().ref("rooms/" + roomHash(word) + "/marks");
+  if (atRef) atRef.off();
+  const room = "rooms/" + roomHash(word);
+  dbRef = firebase.database().ref(room + "/marks");
+  atRef = firebase.database().ref(room + "/attend");
+  let firstA = true;
+  atRef.on("value", snap=>{
+    const val = snap.val();
+    if (firstA){
+      firstA = false;
+      if ((!val || !Object.keys(val).length) && Object.keys(attend).length){ atRef.set(attend); return; }
+    }
+    attend = val || {};
+    saveAtt();
+    clearTimeout(rebuildT); rebuildT = setTimeout(build, 120);
+  });
   let first = true;
   dbRef.on("value", snap=>{
     const val = snap.val();
@@ -286,6 +328,11 @@ function syncSlot(id){
   if (v) dbRef.child(id).set(v); else dbRef.child(id).remove();
 }
 function syncAll(){ if (dbRef) dbRef.set(marks); }
+function syncAtt(id){
+  if (!atRef) return;
+  const v = attend[id];
+  if (v) atRef.child(id).set(v); else atRef.child(id).remove();
+}
 
 // ===== 同グループの他出演枠 =====
 const ROSTER_KEYS = Object.keys(DATA.roster);
@@ -396,15 +443,18 @@ function itemEl(sl, idx, confs){
   if (m[1]) d.classList.add("mshi");
   if (confs.has(idx)) d.classList.add("conf");
   const prem = (DATA.roster[name]||[0,0])[1];
+  const a = at(day, idx);
+  if (a[0]) d.classList.add("aka");
+  if (a[1]) d.classList.add("ashi");
   const q = query.trim();
   if (q && !(name.includes(q) || (bk||"").includes(q))) d.classList.add("dim");
-  if (selOnly && !m[0] && !m[1]) d.style.display = "none";
+  if (selOnly && !m[0] && !m[1] && !a[0] && !a[1]) d.style.display = "none";
   d.dataset.idx = idx;
   const relN = relatedOf(day, idx).length;
   d.innerHTML =
    `<div class="tm">${confs.has(idx)?'<span class="warn">⚠</span>':''}${hm(s)}-${hm(e)}${prem?'<span class="crown">👑</span>':''}${relN?`<span class="more">他${relN}</span>`:""}</div>`+
    `<div class="nm">${esc(name)}</div>`+
-   `<div class="badges">${m[0]?`<span class="bdg bka">${P0[0]}${m[0]}</span>`:""}${m[1]?`<span class="bdg bshi">${P1[0]}${m[1]}</span>`:""}</div>`;
+   `<div class="badges">${a[0]?`<span class="bdg bka">${P0[0]}✔</span>`:""}${a[1]?`<span class="bdg bshi">${P1[0]}✔</span>`:""}${m[0]?`<span class="bdg bka">${P0[0]}${m[0]}</span>`:""}${m[1]?`<span class="bdg bshi">${P1[0]}${m[1]}</span>`:""}</div>`;
   if (bk) d.title = bk;
   let lpTimer = null, lpFired = false;
   const lpStart = ()=>{ lpFired = false; clearTimeout(lpTimer); lpTimer = setTimeout(()=>{ lpFired = true; openDetail(day, idx); }, 450); };
@@ -420,6 +470,13 @@ function itemEl(sl, idx, confs){
   d.addEventListener("click", ()=>{
     if (lpFired){ lpFired = false; return; }
     const id = day+":"+idx;
+    if (mode === "att"){
+      const av = at(day, idx).slice();
+      av[actP] = av[actP] ? 0 : 1;
+      if (!av[0] && !av[1]) delete attend[id]; else attend[id] = av;
+      saveAtt(); syncAtt(id); build();
+      return;
+    }
     const cur = mk(day, idx).slice();
     cur[actP] = CYCLE[(rank(cur[actP])+1) % 4];
     if (!cur[0] && !cur[1]) delete marks[id]; else marks[id] = cur;
@@ -441,6 +498,13 @@ function confSet(){
 }
 function stats(){
   const slots = DATA.days[day];
+  if (mode === "att"){
+    let a0=0,a1=0;
+    slots.forEach((sl,i)=>{ const a=at(day,i); if(a[0])a0++; if(a[1])a1++; });
+    document.getElementById("stats").innerHTML =
+     `${DAYLABEL[day]} 参戦：<b style="color:#ffd6ea">${P0} ${a0}公演</b> / <b style="color:#c6f3ff">${P1} ${a1}公演</b>`;
+    return;
+  }
   let n0=0,n1=0;
   slots.forEach((sl,i)=>{ const m=mk(day,i); if(m[0])n0++; if(m[1])n1++; });
   const nc = confSet().size;
@@ -541,6 +605,110 @@ function fallbackCopy(txt, msg){
   try{ document.execCommand("copy"); toast(msg); }catch(e){ toast("コピーできませんでした"); }
   ta.remove();
 }
+// ===== 画像書き出し（参戦記録） =====
+let expCanvas = null;
+function rr(c,x,y,w,h,r){
+  r = Math.min(r, h/2, w/2);
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r);
+  c.closePath();
+}
+function fitText(c, txt, max){
+  if (c.measureText(txt).width <= max) return txt;
+  while (txt.length > 1 && c.measureText(txt+"…").width > max) txt = txt.slice(0,-1);
+  return txt+"…";
+}
+const CKA = "#ff4f9e", CSHI = "#00a6c8";
+function drawDay(d){
+  const slots = DATA.days[d];
+  const MG=44, AX=84, CW=252, GAP=8, MHX=2.6, HEAD=214, FOOT=110;
+  const colX = st => MG+AX+st*(CW+GAP);
+  const W = colX(6)+CW+MG, H = HEAD+(END-START)*MHX+FOOT;
+  const cv = document.createElement("canvas");
+  cv.width = W; cv.height = H;
+  const c = cv.getContext("2d");
+  const FONT = '"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",Meiryo,sans-serif';
+  const p = actP; // ✎で選択中の人の分だけ（画像に名前は入れない）
+  c.fillStyle = "#ffffff"; c.fillRect(0,0,W,H);
+  let an=0;
+  slots.forEach((sl,i)=>{ if(at(d,i)[p]) an++; });
+  c.fillStyle = "#0e7ac4"; c.font = `800 38px ${FONT}`; c.textAlign="left";
+  c.fillText("TOKYO IDOL FESTIVAL 2026", MG, 66);
+  c.fillStyle = "#16213a"; c.font = `800 60px ${FONT}`;
+  c.fillText(`${DAYLABEL[d]} 参戦記録`, MG, 136);
+  c.fillStyle = "#667"; c.font = `700 27px ${FONT}`;
+  c.fillText(`参戦 ${an}公演`, MG, 182);
+  // 凡例
+  const LX = W-MG-330;
+  rr(c, LX, 60, 34, 34, 8); c.fillStyle = CKA; c.fill();
+  c.fillStyle="#334"; c.font=`700 25px ${FONT}`; c.fillText("＝参戦した公演", LX+46, 86);
+  // ステージ見出し
+  slots && DATA.stages.forEach((s,st)=>{
+    rr(c, colX(st), HEAD-56, CW, 46, 10);
+    c.fillStyle = STCOLOR[st]; c.fill();
+    c.fillStyle = "#fff"; c.font = `800 21px ${FONT}`; c.textAlign="center";
+    c.fillText(fitText(c, s, CW-16), colX(st)+CW/2, HEAD-24);
+  });
+  // 時刻線
+  c.textAlign="right";
+  for (let t=Math.ceil(START/30)*30; t<=END; t+=30){
+    const y = HEAD+(t-START)*MHX;
+    c.strokeStyle = t%60===0 ? "#d2d6e0" : "#eaecf2"; c.lineWidth = t%60===0 ? 2 : 1;
+    c.beginPath(); c.moveTo(MG+AX-8, y); c.lineTo(W-MG, y); c.stroke();
+    if (t%60===0){ c.fillStyle="#8a93a6"; c.font=`800 22px ${FONT}`; c.fillText(hm(t), MG+AX-16, y+8); }
+  }
+  // 公演
+  slots.forEach((sl,i)=>{
+    const [st,s,e,name,sp] = sl;
+    const went = !!at(d,i)[p];
+    const x = colX(st), y = HEAD+(s-START)*MHX, h = Math.max((e-s)*MHX-3, 8), w = CW;
+    rr(c,x,y,w,h,7);
+    if (went){
+      c.fillStyle = CKA; c.fill();
+    } else {
+      c.fillStyle = sp ? "#fbeaf2" : "#f4f4f6"; c.fill();
+      c.save(); c.clip(); c.fillStyle = STCOLOR[st]; c.fillRect(x,y,6,h); c.restore();
+    }
+    c.textAlign = "left";
+    if (h >= 40){
+      c.fillStyle = went ? "rgba(255,255,255,.9)" : "#9aa1b0";
+      c.font = `700 17px ${FONT}`;
+      c.fillText(`${hm(s)}-${hm(e)}`, x+14, y+22);
+      c.fillStyle = went ? "#fff" : (sp ? "#c76fa0" : "#7c8494");
+      c.font = `800 21px ${FONT}`;
+      c.fillText(fitText(c, name, w-26), x+14, y+45);
+    } else if (h >= 16){
+      c.fillStyle = went ? "#fff" : (sp ? "#c76fa0" : "#8a91a0");
+      c.font = `800 15px ${FONT}`;
+      c.fillText(fitText(c, name, w-24), x+12, y+h/2+5);
+    }
+  });
+  // フッター
+  c.fillStyle = "#0e7ac4"; c.font = `800 34px ${FONT}`; c.textAlign="right";
+  c.fillText("#TIF2026", W-MG, H-38);
+  return cv;
+}
+function openExport(){
+  expCanvas = drawDay(day);
+  document.getElementById("expTitle").textContent = `${DAYLABEL[day]} 参戦記録（${DATA.persons[actP]}の分）`;
+  document.getElementById("expImg").src = expCanvas.toDataURL("image/png");
+  show("expOvl");
+}
+function dlImage(type){
+  if (!expCanvas) return;
+  const label = DAYLABEL[day].replace("/", "-").replace(/[()（）]/g, "");
+  expCanvas.toBlob(b=>{
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b);
+    a.download = `TIF2026_${label}_参戦記録.` + (type === "image/jpeg" ? "jpg" : "png");
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    toast("保存しました");
+  }, type, 0.92);
+}
+
 const pill = document.getElementById("personPill");
 DATA.persons.forEach((p,i)=>{
   const b = document.createElement("button");
@@ -569,6 +737,11 @@ function togglePill(btn){ btn.parentNode.querySelectorAll("button").forEach(x=>x
 document.getElementById("search").addEventListener("input", e=>{ query = e.target.value; build(); });
 document.getElementById("zIn").addEventListener("click", ()=>{ zIdx = Math.min(zIdx+1, ZOOM.length-1); build(); });
 document.getElementById("zOut").addEventListener("click", ()=>{ zIdx = Math.max(zIdx-1, 0); build(); });
+document.getElementById("mPlan").addEventListener("click", e=>{ mode="plan"; togglePill(e.target); build(); toast("予定の編集モード"); });
+document.getElementById("mAtt").addEventListener("click", e=>{ mode="att"; togglePill(e.target); build(); toast("参戦記録モード：行った公演をタップ"); });
+document.getElementById("btnExport").addEventListener("click", openExport);
+document.getElementById("btnPng").addEventListener("click", ()=>dlImage("image/png"));
+document.getElementById("btnJpg").addEventListener("click", ()=>dlImage("image/jpeg"));
 document.getElementById("btnList").addEventListener("click", openList);
 document.getElementById("btnCopy").addEventListener("click", copyList);
 document.getElementById("btnShare").addEventListener("click", openShare);
@@ -597,6 +770,7 @@ document.getElementById("btnRoomSkip").addEventListener("click", ()=>{
   const i = DAYDATE.indexOf(ymd);
   if (i > 0){ document.querySelectorAll(".tab")[i].click(); }
 })();
+togglePill(document.getElementById(mode === "att" ? "mAtt" : "mPlan"));
 build();
 if (FB_OK) startSync(aikotoba || DEFAULT_WORD);
 else setSyncUI("", "ローカル");
